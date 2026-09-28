@@ -34,11 +34,11 @@
     "args": {
       "action": "minimize_all"
     },
-    "success_count": 110,
+    "success_count": 118,
     "failure_count": 0,
-    "avg_latency_us": 121390,
+    "avg_latency_us": 408473,
     "source": "DEFAULT_REFLEX",
-    "last_executed": 1790627935.3348467,
+    "last_executed": 1790628421.1526866,
     "confidence": 0.999
   },
   {
@@ -55,11 +55,11 @@
     "args": {
       "action": "mute"
     },
-    "success_count": 155,
+    "success_count": 167,
     "failure_count": 0,
-    "avg_latency_us": 50170,
+    "avg_latency_us": 105767,
     "source": "DEFAULT_REFLEX",
-    "last_executed": 1790627935.1859548,
+    "last_executed": 1790628420.451338,
     "confidence": 0.999
   },
   {
@@ -237,12 +237,12 @@
     "args": {
       "action": "open_camera"
     },
-    "success_count": 51,
+    "success_count": 55,
     "failure_count": 0,
-    "avg_latency_us": 825923,
+    "avg_latency_us": 670724,
     "source": "DEFAULT_REFLEX",
-    "last_executed": 1790627925.4127178,
-    "confidence": 0.9127
+    "last_executed": 1790628406.4331644,
+    "confidence": 0.9156
   },
   {
     "skill_id": "skill_camera_capture_person",
@@ -264,12 +264,12 @@
       "timeout_s": 12.0,
       "open_viewer": true
     },
-    "success_count": 45,
+    "success_count": 49,
     "failure_count": 0,
-    "avg_latency_us": 10322933,
+    "avg_latency_us": 11613480,
     "source": "DEFAULT_REFLEX",
-    "last_executed": 1790627932.856495,
-    "confidence": 0.8765
+    "last_executed": 1790628417.907138,
+    "confidence": 0.8749
   },
   {
     "skill_id": "skill_camera_snapshot",
@@ -311,12 +311,12 @@
     "args": {
       "url": "https://www.youtube.com"
     },
-    "success_count": 66,
+    "success_count": 70,
     "failure_count": 0,
-    "avg_latency_us": 202618,
+    "avg_latency_us": 270484,
     "source": "DEFAULT_REFLEX",
-    "last_executed": 1790627934.9429386,
-    "confidence": 0.9966
+    "last_executed": 1790628419.951805,
+    "confidence": 0.999
   },
   {
     "skill_id": "skill_open_browser",
@@ -358,12 +358,12 @@
       "action": "play_music",
       "query": ""
     },
-    "success_count": 50,
+    "success_count": 54,
     "failure_count": 0,
-    "avg_latency_us": 1369260,
+    "avg_latency_us": 1520703,
     "source": "DEFAULT_REFLEX",
-    "last_executed": 1790627934.300247,
-    "confidence": 0.8994
+    "last_executed": 1790628419.6228516,
+    "confidence": 0.8996
   },
   {
     "skill_id": "skill_close_notepad",
