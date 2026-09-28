@@ -1,0 +1,1827 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Axiom Omni | Remote Mobile Cockpit</title>
+    <!-- 100% Offline-Safe Local Assets (Zero-Internet Dependency) -->
+    <script src="/tailwind.min.js"></script>
+    <link rel="stylesheet" href="/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@400;500;600;700;800&display=swap');
+        
+        /* Base Cyberpunk Glass Styling (100% offline resilient) */
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #060a14;
+            color: #f1f5f9;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .font-mono { font-family: 'JetBrains Mono', Consolas, monospace; }
+        .glass-card {
+            background: rgba(14, 22, 42, 0.88);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid rgba(0, 242, 254, 0.22);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+        .glass-dock {
+            background: rgba(8, 14, 28, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(0, 242, 254, 0.25);
+        }
+        .glow-cyan { box-shadow: 0 0 20px -3px rgba(0, 242, 254, 0.45); }
+        .glow-emerald { box-shadow: 0 0 20px -3px rgba(16, 185, 129, 0.45); }
+        .glow-magenta { box-shadow: 0 0 20px -3px rgba(236, 72, 153, 0.45); }
+        .glow-amber { box-shadow: 0 0 20px -3px rgba(245, 158, 11, 0.45); }
+        
+        /* Active bottom dock tab */
+        .dock-active {
+            color: #00f2fe !important;
+            transform: translateY(-2px);
+        }
+        .dock-active::after {
+            content: '';
+            display: block;
+            width: 5px;
+            height: 5px;
+            background-color: #00f2fe;
+            border-radius: 50%;
+            margin: 3px auto 0 auto;
+            box-shadow: 0 0 8px #00f2fe;
+        }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: rgba(10, 15, 30, 0.5); }
+        ::-webkit-scrollbar-thumb { background: rgba(0, 242, 254, 0.3); border-radius: 4px; }
+
+        /* Tactile Screen Tap Ripple Animation */
+        @keyframes tapRippleAnim {
+            0% { transform: translate(-50%, -50%) scale(0.2); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(3.0); opacity: 0; }
+        }
+        .tap-ripple {
+            position: absolute;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: rgba(0, 242, 254, 0.45);
+            border: 2px solid #00f2fe;
+            pointer-events: none;
+            animation: tapRippleAnim 0.45s cubic-bezier(0.2, 0.9, 0.3, 1) forwards;
+            box-shadow: 0 0 16px #00f2fe;
+            z-index: 30;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col pb-24 text-slate-100">
+
+    <!-- TOP TELEMETRY & SYSTEM HEADER -->
+    <header class="sticky top-0 z-40 bg-[#060a14]/95 backdrop-blur-md border-b border-slate-800/80 px-4 py-3 flex items-center justify-between">
+        <div class="flex items-center space-x-2.5">
+            <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center text-slate-950 font-black text-base shadow-lg glow-cyan">
+                <i class="fa-solid fa-bolt"></i>
+            </div>
+            <div>
+                <div class="flex items-center space-x-1.5">
+                    <span class="text-sm font-extrabold tracking-tight text-white">AXIOM OMNI</span>
+                    <span class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-cyan-950 text-cyan-400 border border-cyan-800 font-semibold">REMOTE v3.2</span>
+                </div>
+                <div class="flex items-center space-x-2 text-[10px] font-mono text-slate-400">
+                    <span id="header-hostname">NEERAJ-PC</span>
+                    <span class="text-slate-600">•</span>
+                    <span id="header-ping" class="text-emerald-400">● LAN CONNECTED</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex items-center space-x-2">
+            <button onclick="refreshAll()" class="w-8 h-8 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-400 hover:text-cyan-400 active:scale-95 transition">
+                <i class="fa-solid fa-rotate text-xs"></i>
+            </button>
+            <div id="vitals-battery-pill" class="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-[11px] font-mono flex items-center space-x-1.5 text-slate-300">
+                <i id="battery-icon" class="fa-solid fa-battery-full text-emerald-400"></i>
+                <span id="header-battery">100%</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- GLOBAL FLOATING TOAST NOTIFICATION (VISIBLE ACROSS ALL 6 TABS) -->
+    <div id="global-toast-container" class="fixed top-14 left-0 right-0 z-50 flex justify-center pointer-events-none px-4 transition-all duration-300 transform -translate-y-20 opacity-0">
+        <div id="global-toast-pill" class="pointer-events-auto max-w-md w-full glass-card rounded-2xl p-2.5 px-4 flex items-center justify-between border border-cyan-400/40 shadow-2xl backdrop-blur-xl">
+            <div class="flex items-center space-x-2.5 truncate mr-2">
+                <span id="global-toast-icon" class="w-6 h-6 rounded-lg bg-cyan-500/20 text-cyan-400 flex items-center justify-center shrink-0 text-xs">
+                    <i class="fa-solid fa-check"></i>
+                </span>
+                <span id="global-toast-text" class="text-xs font-medium text-slate-100 truncate">System Ready</span>
+            </div>
+            <div class="flex items-center space-x-2 shrink-0">
+                <span id="global-toast-latency" class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-900 border border-slate-800 text-cyan-400">12 ms</span>
+                <button onclick="dismissGlobalToast()" class="text-slate-400 hover:text-white text-xs pl-1">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN VIEW CONTAINER (6 TABS) -->
+    <main class="flex-1 p-3.5 max-w-lg mx-auto w-full space-y-4">
+
+        <!-- ============================================================== -->
+        <!-- TAB 1: 🎮 CONTROLS & VOICE HUB                                 -->
+        <!-- ============================================================== -->
+        <section id="tab-controls" class="space-y-4">
+
+            <!-- Real-time Hardware Vitals HUD Card -->
+            <div class="glass-card rounded-2xl p-3.5 space-y-2.5">
+                <div class="flex items-center justify-between text-xs">
+                    <span class="text-slate-300 font-semibold flex items-center space-x-1.5">
+                        <i class="fa-solid fa-laptop text-cyan-400"></i>
+                        <span>Workstation Vitals</span>
+                    </span>
+                    <span id="vitals-updated" class="text-[10px] font-mono text-slate-500">Live</span>
+                </div>
+
+                <div class="grid grid-cols-3 gap-2 text-center font-mono">
+                    <div class="bg-slate-950/70 p-2.5 rounded-xl border border-slate-800/80">
+                        <div class="text-[9px] text-slate-400 uppercase">CPU LOAD</div>
+                        <div id="stat-cpu" class="text-base font-bold text-cyan-400 mt-0.5">--%</div>
+                    </div>
+                    <div class="bg-slate-950/70 p-2.5 rounded-xl border border-slate-800/80">
+                        <div class="text-[9px] text-slate-400 uppercase">RAM USED</div>
+                        <div id="stat-ram" class="text-base font-bold text-indigo-400 mt-0.5">--%</div>
+                    </div>
+                    <div class="bg-slate-950/70 p-2.5 rounded-xl border border-slate-800/80">
+                        <div class="text-[9px] text-slate-400 uppercase">DISK FREE</div>
+                        <div id="stat-disk" class="text-base font-bold text-emerald-400 mt-0.5">-- GB</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Voice & Natural Language Directive Hero -->
+            <div class="glass-card rounded-2xl p-4 text-center space-y-3 relative overflow-hidden">
+                <div class="flex items-center justify-between text-xs">
+                    <span class="text-slate-300 font-semibold flex items-center space-x-1.5">
+                        <i class="fa-solid fa-microphone text-pink-400"></i>
+                        <span>Voice Speech &amp; Autonomous Directive</span>
+                    </span>
+                    <span id="voice-indicator" class="text-[10px] font-mono text-cyan-400">Grounded Reflex</span>
+                </div>
+
+                <!-- Mic Source & Spoken Feedback Toggle Bar -->
+                <div class="flex items-center justify-between gap-1.5 bg-slate-950/80 p-1.5 rounded-xl border border-slate-800 text-[10px] font-mono">
+                    <div class="flex items-center space-x-1">
+                        <button id="mic-mode-pc" onclick="setMicMode('pc')" class="px-2.5 py-1 rounded-lg bg-cyan-500/20 text-cyan-300 font-bold border border-cyan-500/40 transition">
+                            <i class="fa-solid fa-laptop mr-1"></i>PC Mic
+                        </button>
+                        <button id="mic-mode-phone" onclick="setMicMode('phone')" class="px-2.5 py-1 rounded-lg text-slate-400 hover:text-slate-200 transition">
+                            <i class="fa-solid fa-mobile-screen mr-1"></i>Phone Mic
+                        </button>
+                    </div>
+                    <!-- Audio TTS Feedback Toggle -->
+                    <button id="tts-toggle-btn" onclick="toggleVoiceSpeechFeedback()" class="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-700 text-slate-300 flex items-center space-x-1 font-semibold transition" title="Toggle audio spoken response">
+                        <i id="tts-icon" class="fa-solid fa-volume-high text-emerald-400"></i>
+                        <span id="tts-label">Speak ON</span>
+                    </button>
+                </div>
+
+                <!-- Big Interactive Microphone Button with Pulse Rings -->
+                <div class="relative w-24 h-24 mx-auto flex items-center justify-center">
+                    <div id="mic-pulse-ring" class="hidden absolute inset-0 rounded-full border-2 border-rose-500 animate-ping opacity-60 pointer-events-none"></div>
+                    <button id="mobile-mic-btn" onclick="toggleMobileVoice()" class="w-20 h-20 rounded-full bg-gradient-to-tr from-cyan-500 via-blue-600 to-indigo-600 flex items-center justify-center text-white text-2xl shadow-xl glow-cyan active:scale-90 transition transform relative z-10">
+                        <i id="mic-icon" class="fa-solid fa-microphone"></i>
+                    </button>
+                </div>
+
+                <div id="voice-status-text" class="text-xs text-slate-400 font-medium">Tap mic to speak directive aloud</div>
+
+                <!-- Text Directive Input -->
+                <div class="flex space-x-2 pt-1">
+                    <input id="mobile-cmd-input" type="text" onkeydown="if(event.key==='Enter') executeMobileCommand()" placeholder="Type command (e.g. 'search REC Sonbhadra', 'mute')..." class="flex-1 bg-slate-950/90 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500 font-mono">
+                    <button onclick="executeMobileCommand()" class="px-4 py-2.5 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold rounded-xl text-xs shadow-md glow-cyan shrink-0">
+                        <i class="fa-solid fa-play text-[11px]"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tactile Hyper Utility Controls (Grid of Instant Actions) -->
+            <div class="space-y-2">
+                <div class="flex items-center justify-between text-xs px-1 text-slate-400 font-semibold tracking-wider uppercase">
+                    <span>⚡ Tactile OS Dials</span>
+                    <span class="text-[10px] text-cyan-400 font-mono">&lt;40ms Grounded</span>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2 text-xs">
+                    <!-- Media Row -->
+                    <button onclick="triggerAction('media_play_pause')" class="glass-card hover:bg-slate-800/80 active:border-cyan-400 p-3 rounded-xl flex items-center space-x-3 text-left transition">
+                        <div class="w-8 h-8 rounded-lg bg-pink-500/20 text-pink-400 flex items-center justify-center shrink-0">
+                            <i class="fa-solid fa-play"></i>
+                        </div>
+                        <div>
+                            <div class="font-bold text-slate-200">Play / Pause</div>
+                            <div class="text-[10px] text-slate-400 font-mono">Media Toggle</div>
+                        </div>
+                    </button>
+
+                    <button onclick="triggerAction('mute')" class="glass-card hover:bg-slate-800/80 active:border-cyan-400 p-3 rounded-xl flex items-center space-x-3 text-left transition">
+                        <div class="w-8 h-8 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center shrink-0">
+                            <i class="fa-solid fa-volume-xmark"></i>
+                        </div>
+                        <div>
+                            <div class="font-bold text-slate-200">Mute Audio</div>
+                            <div class="text-[10px] text-slate-400 font-mono">Master Toggle</div>
+                        </div>
+                    </button>
+
+                    <button onclick="triggerAction('volume_up')" class="glass-card hover:bg-slate-800/80 active:border-cyan-400 p-3 rounded-xl flex items-center space-x-3 text-left transition">
+                        <div class="w-8 h-8 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center shrink-0">
+                            <i class="fa-solid fa-volume-high"></i>
+                        </div>
+                        <div>
+                            <div class="font-bold text-slate-200">Volume Up</div>
+                            <div class="text-[10px] text-slate-400 font-mono">+10% Steps</div>
+                        </div>
+                    </button>
+
+                    <button onclick="triggerAction('volume_down')" class="glass-card hover:bg-slate-800/80 active:border-cyan-400 p-3 rounded-xl flex items-center space-x-3 text-left transition">
+                        <div class="w-8 h-8 rounded-lg bg-sky-500/20 text-sky-400 flex items-center justify-center shrink-0">
+                            <i class="fa-solid fa-volume-low"></i>
+                        </div>
+                        <div>
+                            <div class="font-bold text-slate-200">Volume Down</div>
+                            <div class="text-[10px] text-slate-400 font-mono">-10% Steps</div>
+                        </div>
+                    </button>
+
+                    <!-- Workstation Row -->
+                    <button onclick="triggerAction('boss_key')" class="glass-card hover:bg-slate-800/80 active:border-cyan-400 p-3 rounded-xl flex items-center space-x-3 text-left transition">
+                        <div class="w-8 h-8 rounded-lg bg-rose-500/20 text-rose-400 flex items-center justify-center shrink-0">
+                            <i class="fa-solid fa-shield-halved"></i>
+                        </div>
+                        <div>
+                            <div class="font-bold text-slate-200">Boss Key</div>
+                            <div class="text-[10px] text-slate-400 font-mono">Hide All &amp; Mute</div>
+                        </div>
+                    </button>
+
+                    <button onclick="triggerAction('lock')" class="glass-card hover:bg-slate-800/80 active:border-cyan-400 p-3 rounded-xl flex items-center space-x-3 text-left transition">
+                        <div class="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
+                            <i class="fa-solid fa-lock"></i>
+                        </div>
+                        <div>
+                            <div class="font-bold text-slate-200">Lock PC</div>
+                            <div class="text-[10px] text-slate-400 font-mono">Workstation</div>
+                        </div>
+                    </button>
+
+                    <button onclick="triggerAction('dark_mode')" class="glass-card hover:bg-slate-800/80 active:border-cyan-400 p-3 rounded-xl flex items-center space-x-3 text-left transition">
+                        <div class="w-8 h-8 rounded-lg bg-teal-500/20 text-teal-400 flex items-center justify-center shrink-0">
+                            <i class="fa-solid fa-circle-half-stroke"></i>
+                        </div>
+                        <div>
+                            <div class="font-bold text-slate-200">Dark / Light</div>
+                            <div class="text-[10px] text-slate-400 font-mono">Theme Registry</div>
+                        </div>
+                    </button>
+
+                    <button onclick="triggerAction('screenshot')" class="glass-card hover:bg-slate-800/80 active:border-cyan-400 p-3 rounded-xl flex items-center space-x-3 text-left transition">
+                        <div class="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
+                            <i class="fa-solid fa-scissors"></i>
+                        </div>
+                        <div>
+                            <div class="font-bold text-slate-200">Snip Screen</div>
+                            <div class="text-[10px] text-slate-400 font-mono">Win+Shift+S</div>
+                        </div>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Quick App Launchers (Expanded 8-App Grid) -->
+            <div class="glass-card rounded-2xl p-3.5 space-y-2.5">
+                <div class="text-xs font-semibold text-slate-300 flex items-center justify-between">
+                    <span class="flex items-center space-x-1.5">
+                        <i class="fa-solid fa-rocket text-cyan-400"></i>
+                        <span>1-Tap App Launchers</span>
+                    </span>
+                    <span class="text-[10px] text-slate-500 font-mono">Desktop Target</span>
+                </div>
+                <div class="grid grid-cols-4 gap-2 text-center text-xs">
+                    <button onclick="launchApp('chrome', 'Chrome')" class="bg-slate-950/70 p-2.5 rounded-xl border border-slate-800 hover:border-cyan-400 active:scale-95 transition">
+                        <i class="fa-brands fa-chrome text-lg text-amber-400"></i>
+                        <div class="text-[10px] text-slate-300 mt-1 font-medium">Chrome</div>
+                    </button>
+                    <button onclick="executeGoal('launch REC Sonbhadra')" class="bg-slate-950/70 p-2.5 rounded-xl border border-slate-800 hover:border-cyan-400 active:scale-95 transition">
+                        <i class="fa-solid fa-graduation-cap text-lg text-cyan-400"></i>
+                        <div class="text-[10px] text-slate-300 mt-1 font-medium">REC Site</div>
+                    </button>
+                    <button onclick="executeGoal('open youtube in browser')" class="bg-slate-950/70 p-2.5 rounded-xl border border-slate-800 hover:border-cyan-400 active:scale-95 transition">
+                        <i class="fa-brands fa-youtube text-lg text-rose-500"></i>
+                        <div class="text-[10px] text-slate-300 mt-1 font-medium">YouTube</div>
+                    </button>
+                    <button onclick="launchApp('vscode', 'VS Code')" class="bg-slate-950/70 p-2.5 rounded-xl border border-slate-800 hover:border-cyan-400 active:scale-95 transition">
+                        <i class="fa-solid fa-code text-lg text-blue-400"></i>
+                        <div class="text-[10px] text-slate-300 mt-1 font-medium">VS Code</div>
+                    </button>
+                    <button onclick="launchApp('notepad', 'Notepad')" class="bg-slate-950/70 p-2.5 rounded-xl border border-slate-800 hover:border-cyan-400 active:scale-95 transition">
+                        <i class="fa-solid fa-file-pen text-lg text-emerald-400"></i>
+                        <div class="text-[10px] text-slate-300 mt-1 font-medium">Notepad</div>
+                    </button>
+                    <button onclick="launchApp('explorer', 'Explorer')" class="bg-slate-950/70 p-2.5 rounded-xl border border-slate-800 hover:border-cyan-400 active:scale-95 transition">
+                        <i class="fa-solid fa-folder text-lg text-amber-400"></i>
+                        <div class="text-[10px] text-slate-300 mt-1 font-medium">Explorer</div>
+                    </button>
+                    <button onclick="launchApp('terminal', 'Terminal')" class="bg-slate-950/70 p-2.5 rounded-xl border border-slate-800 hover:border-cyan-400 active:scale-95 transition">
+                        <i class="fa-solid fa-terminal text-lg text-purple-400"></i>
+                        <div class="text-[10px] text-slate-300 mt-1 font-medium">Terminal</div>
+                    </button>
+                    <button onclick="launchApp('calc', 'Calculator')" class="bg-slate-950/70 p-2.5 rounded-xl border border-slate-800 hover:border-cyan-400 active:scale-95 transition">
+                        <i class="fa-solid fa-calculator text-lg text-teal-400"></i>
+                        <div class="text-[10px] text-slate-300 mt-1 font-medium">Calc</div>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Live Observation Toast Box -->
+            <div id="observation-toast-box" class="glass-card rounded-xl p-3 text-xs font-mono text-cyan-300 space-y-1">
+                <div class="flex items-center justify-between text-[10px] text-slate-400">
+                    <span class="flex items-center space-x-1"><i class="fa-solid fa-terminal text-cyan-400"></i><span>Grounded Observation</span></span>
+                    <span id="obs-latency" class="text-slate-500">Ready</span>
+                </div>
+                <div id="obs-message" class="text-[11px] leading-relaxed text-slate-200">Axiom Mobile Cockpit linked to physical PC host.</div>
+            </div>
+
+        </section>
+
+        <!-- ============================================================== -->
+        <!-- TAB 2: 👁️ LIVE SCREEN MIRRORING ("SEEING OPTION")              -->
+        <!-- ============================================================== -->
+        <section id="tab-screen" class="hidden space-y-4">
+            <div class="glass-card rounded-2xl p-3.5 space-y-3">
+                <div class="flex items-center justify-between text-xs">
+                    <span class="text-slate-200 font-semibold flex items-center space-x-1.5">
+                        <i class="fa-solid fa-desktop text-cyan-400"></i>
+                        <span>Physical Desktop Screen Mirror</span>
+                    </span>
+                    <div class="flex items-center space-x-2">
+                        <label class="flex items-center space-x-1 text-[11px] text-slate-400 cursor-pointer">
+                            <input id="chk-auto-refresh" type="checkbox" onchange="toggleAutoStream(this.checked)" class="rounded bg-slate-900 border-slate-700 text-cyan-500">
+                            <span>Auto (2s)</span>
+                        </label>
+                        <button onclick="refreshScreenSnapshot()" class="px-2.5 py-1 bg-cyan-600 hover:bg-cyan-500 rounded-lg text-white font-semibold text-[11px] flex items-center space-x-1 shadow">
+                            <i class="fa-solid fa-camera"></i>
+                            <span>Snap</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Screen Canvas / Image Display -->
+                <div id="screen-container" class="relative bg-black rounded-xl overflow-hidden border border-slate-800 shadow-inner group select-none">
+                    <img id="live-screen-img" src="/api/omni/screen_capture" alt="PC Screen" class="w-full h-auto cursor-crosshair block select-none touch-none" onclick="handleScreenClick(event)">
+                    <div id="screen-loading-overlay" class="hidden absolute inset-0 bg-black/60 flex items-center justify-center text-cyan-400 font-mono text-xs pointer-events-none">
+                        <i class="fa-solid fa-spinner fa-spin mr-2"></i>Capturing GDI BitBlt pixels...
+                    </div>
+                </div>
+
+                <div class="text-[11px] text-slate-400 flex items-center justify-between font-mono">
+                    <span>💡 Tap image to click that point on PC</span>
+                    <span id="screen-res-badge">1366x768</span>
+                </div>
+            </div>
+
+            <!-- Virtual Mouse Clicker Bar -->
+            <div class="glass-card rounded-2xl p-3 grid grid-cols-3 gap-2 text-center text-xs font-semibold">
+                <button onclick="sendRemoteClick('left')" class="py-2.5 bg-slate-900 hover:bg-slate-800 active:bg-cyan-500/20 border border-slate-800 active:border-cyan-400 rounded-xl text-slate-200 transition">
+                    <i class="fa-solid fa-computer-mouse text-cyan-400 mr-1.5"></i>Left Click
+                </button>
+                <button onclick="sendRemoteClick('double')" class="py-2.5 bg-slate-900 hover:bg-slate-800 active:bg-cyan-500/20 border border-slate-800 active:border-cyan-400 rounded-xl text-slate-200 transition">
+                    <i class="fa-solid fa-angles-right text-indigo-400 mr-1.5"></i>Double Click
+                </button>
+                <button onclick="sendRemoteClick('right')" class="py-2.5 bg-slate-900 hover:bg-slate-800 active:bg-cyan-500/20 border border-slate-800 active:border-cyan-400 rounded-xl text-slate-200 transition">
+                    <i class="fa-solid fa-computer-mouse text-purple-400 mr-1.5"></i>Right Click
+                </button>
+            </div>
+        </section>
+
+        <!-- ============================================================== -->
+        <!-- TAB 3: 📂 REMOTE FILE & FOLDER EXPLORER                         -->
+        <!-- ============================================================== -->
+        <section id="tab-files" class="hidden space-y-4">
+            <div class="glass-card rounded-2xl p-3.5 space-y-3">
+                <div class="flex items-center justify-between text-xs">
+                    <span class="text-slate-200 font-semibold flex items-center space-x-1.5">
+                        <i class="fa-solid fa-folder-open text-amber-400"></i>
+                        <span>Remote File System Explorer</span>
+                    </span>
+                    <button onclick="browseDirectory(currentBrowsePath)" class="text-slate-400 hover:text-cyan-400 text-xs">
+                        <i class="fa-solid fa-rotate"></i>
+                    </button>
+                </div>
+
+                <!-- Quick Location Bookmarks -->
+                <div class="flex space-x-1.5 overflow-x-auto pb-1 text-[11px] font-mono">
+                    <button onclick="browseDirectory('')" class="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-lg text-cyan-400 shrink-0">🏠 Project</button>
+                    <button onclick="browseDirectory('C:\\Users\\Neeraj\\Desktop')" class="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-lg text-slate-300 shrink-0">Desktop</button>
+                    <button onclick="browseDirectory('C:\\Users\\Neeraj\\Downloads')" class="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-lg text-slate-300 shrink-0">Downloads</button>
+                    <button onclick="browseDirectory('C:\\')" class="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-lg text-slate-300 shrink-0">C:\ Drive</button>
+                </div>
+
+                <!-- Current Path Breadcrumb -->
+                <div class="flex items-center space-x-2 bg-slate-950 p-2 rounded-xl border border-slate-800 text-[11px] font-mono text-slate-400">
+                    <button onclick="goUpDirectory()" id="btn-up-dir" class="text-cyan-400 hover:text-cyan-300 font-bold px-1"><i class="fa-solid fa-arrow-up"></i></button>
+                    <span id="current-dir-display" class="truncate flex-1 text-slate-300">C:\...</span>
+                </div>
+
+                <!-- Instant File Filter Search -->
+                <div class="relative">
+                    <input id="file-filter-input" type="text" oninput="filterFiles()" placeholder="Filter directory files..." class="w-full bg-slate-950/80 border border-slate-800 rounded-xl px-3 py-1.5 pl-8 text-xs text-slate-200 placeholder-slate-600 font-mono focus:outline-none focus:border-cyan-500">
+                    <i class="fa-solid fa-magnifying-glass absolute left-2.5 top-2.5 text-slate-600 text-xs pointer-events-none"></i>
+                </div>
+
+                <!-- File/Folder Items List -->
+                <div id="file-items-list" class="max-h-[380px] overflow-y-auto space-y-1.5 font-mono text-xs pr-1">
+                    <div class="text-center py-8 text-slate-500">Loading directory...</div>
+                </div>
+            </div>
+
+            <!-- File View / Text Preview Modal Container -->
+            <div id="file-preview-modal" class="hidden glass-card rounded-2xl p-4 space-y-3">
+                <div class="flex items-center justify-between text-xs border-b border-slate-800 pb-2">
+                    <span id="preview-filename" class="font-bold text-cyan-400 font-mono">file.txt</span>
+                    <button onclick="closeFilePreview()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                <pre id="preview-content" class="bg-slate-950 p-3 rounded-xl border border-slate-800 text-[11px] font-mono text-slate-300 max-h-60 overflow-y-auto whitespace-pre-wrap"></pre>
+            </div>
+        </section>
+
+        <!-- ============================================================== -->
+        <!-- TAB 4: ⚡ TASK MANAGER & EXECUTED TASKS VIEW                   -->
+        <!-- ============================================================== -->
+        <section id="tab-tasks" class="hidden space-y-4">
+
+            <!-- Subtab Switcher -->
+            <div class="flex rounded-xl bg-slate-950 p-1 border border-slate-800 text-xs font-semibold space-x-1">
+                <button id="subtab-btn-history" onclick="switchTaskSubtab('history')" class="flex-1 py-1.5 rounded-lg bg-cyan-500 text-slate-950 font-bold transition">
+                    <i class="fa-solid fa-clock-rotate-left mr-1"></i>Tasks
+                </button>
+                <button id="subtab-btn-procs" onclick="switchTaskSubtab('procs')" class="flex-1 py-1.5 rounded-lg text-slate-400 hover:text-white transition">
+                    <i class="fa-solid fa-microchip mr-1"></i>Procs
+                </button>
+                <button id="subtab-btn-catalog" onclick="switchTaskSubtab('catalog')" class="flex-1 py-1.5 rounded-lg text-slate-400 hover:text-white transition">
+                    <i class="fa-solid fa-shapes mr-1"></i>Installed Apps
+                </button>
+            </div>
+
+            <!-- View A: Executed Tasks Stream -->
+            <div id="task-view-history" class="glass-card rounded-2xl p-3.5 space-y-3">
+                <div class="flex items-center justify-between text-xs">
+                    <span class="text-slate-200 font-semibold flex items-center space-x-1.5">
+                        <i class="fa-solid fa-timeline text-cyan-400"></i>
+                        <span>Recent Agent Executions</span>
+                    </span>
+                    <button onclick="loadExecutionHistory()" class="text-slate-400 hover:text-cyan-400 text-xs"><i class="fa-solid fa-rotate"></i></button>
+                </div>
+                <div id="execution-history-list" class="space-y-2 max-h-[440px] overflow-y-auto text-xs font-mono pr-1">
+                    <div class="text-center py-8 text-slate-500">Loading history...</div>
+                </div>
+            </div>
+
+            <!-- View B: Running Process Manager -->
+            <div id="task-view-procs" class="hidden glass-card rounded-2xl p-3.5 space-y-3">
+                <div class="flex items-center justify-between text-xs">
+                    <span class="text-slate-200 font-semibold flex items-center space-x-1.5">
+                        <i class="fa-solid fa-microchip text-indigo-400"></i>
+                        <span>Windows Process Manager</span>
+                    </span>
+                    <button onclick="loadProcesses()" class="text-slate-400 hover:text-cyan-400 text-xs"><i class="fa-solid fa-rotate"></i></button>
+                </div>
+                <input id="proc-filter-input" type="text" oninput="filterProcesses()" placeholder="Search process name (e.g. chrome, python)..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs font-mono text-slate-200 focus:outline-none focus:border-cyan-500">
+                <div id="processes-list" class="space-y-1.5 max-h-[380px] overflow-y-auto text-xs font-mono pr-1">
+                    <div class="text-center py-8 text-slate-500">Loading processes...</div>
+                </div>
+            </div>
+
+            <!-- View C: Grounded Installed Apps Catalog -->
+            <div id="task-view-catalog" class="hidden glass-card rounded-2xl p-3.5 space-y-3">
+                <div class="flex items-center justify-between text-xs">
+                    <span class="text-slate-200 font-semibold flex items-center space-x-1.5">
+                        <i class="fa-solid fa-shapes text-cyan-400"></i>
+                        <span>Installed PC Applications</span>
+                    </span>
+                    <span id="catalog-count-badge" class="text-[10px] text-slate-500 font-mono">0 Apps</span>
+                </div>
+                <input id="catalog-filter-input" type="text" oninput="filterCatalog()" placeholder="Search installed apps (e.g. canva, code, cmd, calc)..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs font-mono text-slate-200 focus:outline-none focus:border-cyan-500">
+                <div id="catalog-list" class="space-y-1.5 max-h-[380px] overflow-y-auto text-xs font-mono pr-1">
+                    <div class="text-center py-8 text-slate-500">Loading catalog...</div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- ============================================================== -->
+        <!-- TAB 5: 🔗 WEBHOOK & REMOTE AUTOMATION GATEWAY                  -->
+        <!-- ============================================================== -->
+        <section id="tab-webhooks" class="hidden space-y-4">
+            <div class="glass-card rounded-2xl p-3.5 space-y-3">
+                <div class="text-xs font-semibold text-slate-200 flex items-center space-x-1.5">
+                    <i class="fa-solid fa-link text-cyan-400"></i>
+                    <span>Webhook &amp; Remote API Hub</span>
+                </div>
+                <p class="text-[11px] text-slate-400 leading-relaxed">
+                    Trigger physical actions or agentic ReAct goals on your PC from <strong>iOS Shortcuts, Android Tasker, Home Assistant, curl, or browser bookmarks</strong>.
+                </p>
+
+                <!-- Webhook Generator Form -->
+                <div class="bg-slate-950/80 p-3 rounded-xl border border-slate-800 space-y-2.5 text-xs font-mono">
+                    <div>
+                        <label class="block text-[10px] text-slate-400 mb-1">CHOOSE ACTION OR DIRECTIVE:</label>
+                        <select id="webhook-select-action" onchange="generateWebhookSnippet()" class="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-cyan-300 focus:outline-none">
+                            <option value="goal">Custom Goal / Directive</option>
+                            <option value="boss_key">Boss Key (Hide All + Mute)</option>
+                            <option value="mute">Mute / Unmute Audio</option>
+                            <option value="play_music">Play Music / Lofi</option>
+                            <option value="lock">Lock Workstation</option>
+                            <option value="sleep">Sleep PC</option>
+                            <option value="dark_mode">Toggle Dark Mode</option>
+                            <option value="screenshot">Windows Snip (Win+Shift+S)</option>
+                        </select>
+                    </div>
+
+                    <div id="webhook-goal-field">
+                        <label class="block text-[10px] text-slate-400 mb-1">GOAL PROMPT:</label>
+                        <input id="webhook-goal-text" type="text" oninput="generateWebhookSnippet()" value="open browser and search REC Sonbhadra" class="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-slate-200 focus:outline-none">
+                    </div>
+
+                    <div>
+                        <label class="block text-[10px] text-slate-400 mb-1">GENERATED WEBHOOK URL (LOCAL LAN):</label>
+                        <div class="relative">
+                            <input id="webhook-url-output" readonly type="text" class="w-full bg-slate-900 border border-cyan-800/60 rounded-lg p-2 pr-16 text-[10px] text-cyan-400 select-all">
+                            <button onclick="copyWebhookUrl()" class="absolute right-1 top-1 bottom-1 px-2.5 bg-cyan-600 hover:bg-cyan-500 rounded text-[10px] font-bold text-slate-950">Copy</button>
+                        </div>
+                    </div>
+
+                    <button onclick="testWebhookNow()" class="w-full py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold rounded-lg text-xs shadow transition">
+                        <i class="fa-solid fa-play mr-1.5"></i>Execute Webhook Now
+                    </button>
+                </div>
+            </div>
+
+            <!-- Instant 1-Tap Webhook Buttons -->
+            <div class="space-y-2">
+                <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-1">Instant Webhook Triggers</div>
+                <div class="grid grid-cols-2 gap-2 text-xs font-mono">
+                    <button onclick="triggerWebhookDirect('boss_key')" class="glass-card hover:bg-slate-800 active:border-cyan-400 p-2.5 rounded-xl text-left">
+                        <div class="font-bold text-rose-400">🛡️ Boss Key</div>
+                        <div class="text-[9px] text-slate-500 truncate">/webhook/trigger?action=boss_key</div>
+                    </button>
+                    <button onclick="triggerWebhookDirect('mute')" class="glass-card hover:bg-slate-800 active:border-cyan-400 p-2.5 rounded-xl text-left">
+                        <div class="font-bold text-purple-400">🔇 Mute Audio</div>
+                        <div class="text-[9px] text-slate-500 truncate">/webhook/trigger?action=mute</div>
+                    </button>
+                    <button onclick="triggerWebhookDirect('lock')" class="glass-card hover:bg-slate-800 active:border-cyan-400 p-2.5 rounded-xl text-left">
+                        <div class="font-bold text-amber-400">🔒 Lock PC</div>
+                        <div class="text-[9px] text-slate-500 truncate">/webhook/trigger?action=lock</div>
+                    </button>
+                    <button onclick="triggerWebhookDirect('dark_mode')" class="glass-card hover:bg-slate-800 active:border-cyan-400 p-2.5 rounded-xl text-left">
+                        <div class="font-bold text-teal-400">🌙 Dark Mode</div>
+                        <div class="text-[9px] text-slate-500 truncate">/webhook/trigger?action=dark_mode</div>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================================== -->
+        <!-- TAB 6: 🖱️ VIRTUAL TRACKPAD & REMOTE INPUT                       -->
+        <!-- ============================================================== -->
+        <section id="tab-trackpad" class="hidden space-y-4">
+            <div class="glass-card rounded-2xl p-3.5 space-y-3">
+                <div class="flex items-center justify-between text-xs">
+                    <span class="text-slate-200 font-semibold flex items-center space-x-1.5">
+                        <i class="fa-solid fa-arrow-pointer text-cyan-400"></i>
+                        <span>Zero-Drop Virtual Trackpad</span>
+                    </span>
+                    <!-- Sensitivity Toggle -->
+                    <div class="flex items-center space-x-1 font-mono text-[10px]">
+                        <span class="text-slate-500">SPEED:</span>
+                        <button onclick="setSensitivity(1.0, this)" class="sens-btn px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-400">1x</button>
+                        <button onclick="setSensitivity(1.8, this)" class="sens-btn px-1.5 py-0.5 rounded bg-cyan-950 border border-cyan-700 text-cyan-300 font-bold">1.8x</button>
+                        <button onclick="setSensitivity(2.8, this)" class="sens-btn px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-400">2.8x</button>
+                    </div>
+                </div>
+
+                <!-- Touchpad Container: Canvas + Scroll Strip -->
+                <div class="relative flex h-72 rounded-2xl overflow-hidden border-2 border-slate-800 bg-slate-950 select-none shadow-inner">
+                    <!-- Main Touchpad Area -->
+                    <div id="touchpad-area" class="flex-1 flex flex-col items-center justify-center text-slate-600 text-xs font-mono cursor-move select-none touch-none relative overflow-hidden bg-slate-950/90">
+                        <div id="touchpad-indicator" class="hidden absolute w-8 h-8 -translate-x-1/2 -translate-y-1/2 rounded-full bg-cyan-400/30 border border-cyan-400 pointer-events-none transition-transform duration-75 shadow-lg shadow-cyan-500/50"></div>
+                        <i class="fa-regular fa-hand-pointer text-3xl mb-2 text-slate-700 pointer-events-none"></i>
+                        <span class="pointer-events-none text-slate-400 font-medium">Slide finger to drive cursor</span>
+                        <span class="text-[10px] text-slate-600 mt-1 pointer-events-none">Tap to click • 2 fingers to scroll</span>
+                    </div>
+
+                    <!-- Dedicated 1-Finger Vertical Scroll Strip -->
+                    <div id="touchpad-scroll-strip" class="w-12 bg-slate-900/90 border-l border-slate-800/80 flex flex-col items-center justify-between py-4 text-slate-500 text-[10px] font-mono touch-none select-none active:bg-cyan-950/40">
+                        <i class="fa-solid fa-chevron-up"></i>
+                        <span class="rotate-90 tracking-widest text-[9px] uppercase font-semibold text-slate-400">SCROLL</span>
+                        <i class="fa-solid fa-chevron-down"></i>
+                    </div>
+                </div>
+
+                <!-- Physical Click Buttons & Drag Lock Bar -->
+                <div class="grid grid-cols-4 gap-2 text-xs font-bold font-mono">
+                    <button id="btn-mouse-left" onclick="sendRemoteClick('left')" class="py-2.5 bg-slate-900 border border-slate-800 active:bg-cyan-500 active:text-slate-950 rounded-xl text-slate-200 transition">
+                        LEFT
+                    </button>
+                    <button id="btn-mouse-double" onclick="sendRemoteClick('double')" class="py-2.5 bg-slate-900 border border-slate-800 active:bg-cyan-500 active:text-slate-950 rounded-xl text-slate-200 transition">
+                        DOUBLE
+                    </button>
+                    <button id="btn-mouse-right" onclick="sendRemoteClick('right')" class="py-2.5 bg-slate-900 border border-slate-800 active:bg-cyan-500 active:text-slate-950 rounded-xl text-slate-200 transition">
+                        RIGHT
+                    </button>
+                    <button id="btn-drag-lock" onclick="toggleDragLock()" class="py-2.5 bg-slate-900 border border-slate-800 active:bg-amber-500 rounded-xl text-slate-300 transition text-[11px]">
+                        <i class="fa-solid fa-hand-fist mr-1"></i>DRAG
+                    </button>
+                </div>
+            </div>
+
+            <!-- Remote Keyboard Typing Bar -->
+            <div class="glass-card rounded-2xl p-3.5 space-y-2.5">
+                <div class="text-xs font-semibold text-slate-200 flex items-center space-x-1.5">
+                    <i class="fa-solid fa-keyboard text-indigo-400"></i>
+                    <span>Type Text Directly to PC Window</span>
+                </div>
+                <div class="flex space-x-2">
+                    <input id="remote-typing-input" type="text" onkeydown="if(event.key==='Enter') sendRemoteTyping()" placeholder="Type text to paste into PC window..." class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 font-mono focus:outline-none focus:border-indigo-500">
+                    <button onclick="sendRemoteTyping()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl text-xs shadow shrink-0">Send</button>
+                </div>
+                <!-- Quick Hardware Keys Matrix -->
+                <div class="grid grid-cols-4 gap-1.5 text-center text-[11px] font-mono font-semibold pt-1">
+                    <button onclick="sendRemoteKey('enter')" class="bg-slate-900 border border-slate-800 py-1.5 rounded-lg active:bg-slate-700">Enter</button>
+                    <button onclick="sendRemoteKey('backspace')" class="bg-slate-900 border border-slate-800 py-1.5 rounded-lg active:bg-slate-700">Bksp</button>
+                    <button onclick="sendRemoteKey('tab')" class="bg-slate-900 border border-slate-800 py-1.5 rounded-lg active:bg-slate-700">Tab</button>
+                    <button onclick="sendRemoteKey('escape')" class="bg-slate-900 border border-slate-800 py-1.5 rounded-lg active:bg-slate-700">Esc</button>
+                    <button onclick="sendRemoteKey('win')" class="bg-slate-900 border border-slate-800 py-1.5 rounded-lg active:bg-slate-700">Win</button>
+                    <button onclick="sendRemoteKey('win_d')" class="bg-slate-900 border border-slate-800 py-1.5 rounded-lg active:bg-slate-700">Win+D</button>
+                    <button onclick="sendRemoteKey('alt_tab')" class="bg-slate-900 border border-slate-800 py-1.5 rounded-lg active:bg-slate-700">Alt+Tab</button>
+                    <button onclick="sendRemoteKey('f5')" class="bg-slate-900 border border-slate-800 py-1.5 rounded-lg active:bg-slate-700">F5</button>
+                    <button onclick="sendRemoteKey('ctrl_c')" class="bg-slate-900 border border-slate-800 py-1.5 rounded-lg active:bg-slate-700">Copy</button>
+                    <button onclick="sendRemoteKey('ctrl_v')" class="bg-slate-900 border border-slate-800 py-1.5 rounded-lg active:bg-slate-700">Paste</button>
+                    <button onclick="sendRemoteKey('ctrl_z')" class="bg-slate-900 border border-slate-800 py-1.5 rounded-lg active:bg-slate-700">Undo</button>
+                    <button onclick="sendRemoteKey('ctrl_w')" class="bg-slate-900 border border-slate-800 py-1.5 rounded-lg active:bg-slate-700">CloseTab</button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- FLOATING BOTTOM NAVIGATION DOCK (6 ICONS) -->
+    <nav class="fixed bottom-0 left-0 right-0 z-50 glass-dock py-2 px-3 flex justify-around text-slate-400 text-center select-none">
+        <button onclick="switchTab('controls')" id="dock-btn-controls" class="flex flex-col items-center text-[10px] dock-active transition">
+            <i class="fa-solid fa-gamepad text-base mb-0.5"></i>
+            <span>Controls</span>
+        </button>
+        <button onclick="switchTab('screen')" id="dock-btn-screen" class="flex flex-col items-center text-[10px] transition">
+            <i class="fa-solid fa-display text-base mb-0.5"></i>
+            <span>Screen</span>
+        </button>
+        <button onclick="switchTab('files')" id="dock-btn-files" class="flex flex-col items-center text-[10px] transition">
+            <i class="fa-solid fa-folder-tree text-base mb-0.5"></i>
+            <span>Files</span>
+        </button>
+        <button onclick="switchTab('tasks')" id="dock-btn-tasks" class="flex flex-col items-center text-[10px] transition">
+            <i class="fa-solid fa-chart-line text-base mb-0.5"></i>
+            <span>Tasks</span>
+        </button>
+        <button onclick="switchTab('webhooks')" id="dock-btn-webhooks" class="flex flex-col items-center text-[10px] transition">
+            <i class="fa-solid fa-link text-base mb-0.5"></i>
+            <span>Webhook</span>
+        </button>
+        <button onclick="switchTab('trackpad')" id="dock-btn-trackpad" class="flex flex-col items-center text-[10px] transition">
+            <i class="fa-solid fa-arrow-pointer text-base mb-0.5"></i>
+            <span>Touchpad</span>
+        </button>
+    </nav>
+
+    <!-- SCRIPT LOGIC (100% OFFLINE FUNCTIONALITY) -->
+    <script>
+        let currentTab = 'controls';
+        let currentBrowsePath = '';
+        let screenStreamInterval = null;
+        let isRecordingVoice = false;
+        let speechRecognitionInstance = null;
+        let cachedProcesses = [];
+
+        // 1. Tab Switching Logic
+        function switchTab(tabId) {
+            currentTab = tabId;
+            const tabs = ['controls', 'screen', 'files', 'tasks', 'webhooks', 'trackpad'];
+            tabs.forEach(t => {
+                const el = document.getElementById(`tab-${t}`);
+                const btn = document.getElementById(`dock-btn-${t}`);
+                if (el && btn) {
+                    if (t === tabId) {
+                        el.classList.remove('hidden');
+                        btn.classList.add('dock-active');
+                    } else {
+                        el.classList.add('hidden');
+                        btn.classList.remove('dock-active');
+                    }
+                }
+            });
+
+            if (tabId === 'screen') refreshScreenSnapshot();
+            if (tabId === 'files' && !currentBrowsePath) browseDirectory('');
+            if (tabId === 'tasks') loadExecutionHistory();
+            if (tabId === 'webhooks') generateWebhookSnippet();
+        }
+
+        // 2. Telemetry Refresh
+        async function fetchTelemetry() {
+            try {
+                const res = await fetch('/api/system_telemetry');
+                if (res.ok) {
+                    const data = await res.json();
+                    document.getElementById('header-hostname').innerText = data.hostname || 'NEERAJ-PC';
+                    document.getElementById('header-battery').innerText = `${data.battery_percent}%`;
+                    document.getElementById('stat-cpu').innerText = `${data.cpu_percent || 0}%`;
+                    document.getElementById('stat-ram').innerText = `${data.ram_percent || 0}%`;
+                    document.getElementById('stat-disk').innerText = `${data.disk_free_gb || '47.7'} GB`;
+                    document.getElementById('vitals-updated').innerText = new Date().toLocaleTimeString();
+                    
+                    const bIcon = document.getElementById('battery-icon');
+                    if (data.is_charging) {
+                        bIcon.className = "fa-solid fa-plug text-emerald-400";
+                    } else if (data.battery_percent < 20) {
+                        bIcon.className = "fa-solid fa-battery-quarter text-rose-400";
+                    } else {
+                        bIcon.className = "fa-solid fa-battery-full text-emerald-400";
+                    }
+                }
+            } catch (e) {}
+        }
+
+        // 3. Instant OS Actions
+        async function triggerAction(actionName) {
+            showToast(`⚡ Dispatched: ${actionName}...`, "running");
+            try {
+                let endpoint = '/api/os_action';
+                let body = { action: actionName };
+                
+                // Route new hyper controls
+                if (actionName === 'mute') {
+                    endpoint = '/api/omni/tool';
+                    body = { tool: 'media_control', args: { action: 'mute' } };
+                } else if (actionName === 'volume_up' || actionName === 'volume_down') {
+                    endpoint = '/api/omni/tool';
+                    body = { tool: 'media_control', args: { action: actionName } };
+                } else if (actionName === 'media_play_pause') {
+                    endpoint = '/api/omni/tool';
+                    body = { tool: 'media_control', args: { action: 'play_pause' } };
+                } else if (actionName === 'dark_mode') {
+                    endpoint = '/api/omni/tool';
+                    body = { tool: 'system_theme_control', args: { action: 'toggle' } };
+                }
+
+                const res = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                const data = await res.json();
+                const msg = data.message || data.result?.message || `Executed ${actionName}`;
+                showToast(msg, "done", data.latency_ms || 25);
+                fetchTelemetry();
+            } catch (e) {
+                showToast(`Error: ${e.message}`, "error");
+            }
+        }
+
+        // 3.5 Direct Native Desktop App Launcher
+        async function launchApp(appName, label) {
+            showToast(`⚡ Launching ${label || appName}...`, "running");
+            try {
+                const res = await fetch('/api/omni/tool', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        tool: 'app_control',
+                        args: { action: 'launch', target: appName }
+                    })
+                });
+                const data = await res.json();
+                const msg = data.result?.message || data.message || `Launched ${label || appName}`;
+                showToast(msg, "done", data.latency_ms || 20);
+                speakText(msg);
+                fetchTelemetry();
+            } catch (e) {
+                showToast(`Failed: ${e.message}`, "error");
+            }
+        }
+
+        // 4. Natural Language Directive Execution
+        async function executeGoal(goalText) {
+            if (!goalText) return;
+            showToast(`Analyzing: "${goalText}"...`, "running");
+            try {
+                const res = await fetch('/api/omni/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ goal: goalText })
+                });
+                const data = await res.json();
+                const mode = data.execution_mode || "REFLEX";
+                const msg = data.final_answer || data.message || `Directive verified.`;
+                showToast(`[${mode}] ${msg}`, "done", data.latency_ms);
+                speakText(msg);
+                fetchTelemetry();
+            } catch (e) {
+                showToast(`Failed: ${e.message}`, "error");
+            }
+        }
+
+        function executeMobileCommand() {
+            const input = document.getElementById('mobile-cmd-input');
+            const val = input.value.trim();
+            if (val) {
+                input.value = '';
+                executeGoal(val);
+            }
+        }
+
+        // 5. Dual-Mode Voice Speech Engine (Workstation Mic + Mobile WebSpeech + TTS)
+        let currentMicMode = 'pc'; // default to PC Mic (100% resilient across all mobile browsers over LAN HTTP)
+        let speakFeedbackEnabled = true;
+
+        function setMicMode(mode) {
+            currentMicMode = mode;
+            const btnPc = document.getElementById('mic-mode-pc');
+            const btnPhone = document.getElementById('mic-mode-phone');
+            const statusTxt = document.getElementById('voice-status-text');
+            if (mode === 'pc') {
+                btnPc.className = "px-2.5 py-1 rounded-lg bg-cyan-500/20 text-cyan-300 font-bold border border-cyan-500/40 transition";
+                btnPhone.className = "px-2.5 py-1 rounded-lg text-slate-400 hover:text-slate-200 transition";
+                statusTxt.innerText = "Tap mic to record on PC hardware";
+                showToast("Voice Mode: PC Workstation Hardware Mic", "done", 5);
+            } else {
+                btnPhone.className = "px-2.5 py-1 rounded-lg bg-cyan-500/20 text-cyan-300 font-bold border border-cyan-500/40 transition";
+                btnPc.className = "px-2.5 py-1 rounded-lg text-slate-400 hover:text-slate-200 transition";
+                statusTxt.innerText = "Tap mic to record on phone browser";
+                showToast("Voice Mode: Phone Browser Mic (WebSpeech)", "done", 5);
+            }
+        }
+
+        function toggleVoiceSpeechFeedback() {
+            speakFeedbackEnabled = !speakFeedbackEnabled;
+            const btn = document.getElementById('tts-toggle-btn');
+            const icon = document.getElementById('tts-icon');
+            const label = document.getElementById('tts-label');
+            if (speakFeedbackEnabled) {
+                icon.className = "fa-solid fa-volume-high text-emerald-400";
+                label.innerText = "Speak ON";
+                btn.className = "px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-700 text-slate-300 flex items-center space-x-1 font-semibold transition";
+                speakText("Spoken audio feedback enabled.");
+                showToast("Spoken feedback active", "done", 0);
+            } else {
+                icon.className = "fa-solid fa-volume-xmark text-slate-500";
+                label.innerText = "Speak OFF";
+                btn.className = "px-2.5 py-1 rounded-lg bg-slate-950 border border-slate-800 text-slate-500 flex items-center space-x-1 font-semibold transition";
+                showToast("Spoken feedback muted", "done", 0);
+            }
+        }
+
+        function speakText(text) {
+            if (!speakFeedbackEnabled || !text) return;
+            // Clean markdown and brackets for spoken audio
+            const cleanText = text.replace(/\[.*?\]/g, '').replace(/[*_#`]/g, '').trim();
+            if (!cleanText) return;
+
+            // 1. Spoken audio on mobile phone (SpeechSynthesis works on mobile HTTP without SSL)
+            try {
+                if ('speechSynthesis' in window) {
+                    window.speechSynthesis.cancel();
+                    const utterance = new SpeechSynthesisUtterance(cleanText);
+                    utterance.rate = 1.05;
+                    utterance.pitch = 1.0;
+                    window.speechSynthesis.speak(utterance);
+                }
+            } catch (e) {}
+
+            // 2. Also dispatch to physical PC speakers via Windows SAPI
+            fetch('/api/omni/voice/speak', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: cleanText })
+            }).catch(() => {});
+        }
+
+        async function recordWorkstationVoice() {
+            if (isRecordingVoice) return;
+            isRecordingVoice = true;
+            const micBtn = document.getElementById('mobile-mic-btn');
+            const pulseRing = document.getElementById('mic-pulse-ring');
+            const statusTxt = document.getElementById('voice-status-text');
+
+            micBtn.classList.add('glow-magenta', 'scale-110');
+            micBtn.classList.replace('from-cyan-500', 'from-rose-500');
+            if (pulseRing) pulseRing.classList.remove('hidden');
+
+            let countdown = 4;
+            statusTxt.innerText = `🔴 PC Mic Listening (${countdown}s)... Speak clearly!`;
+            statusTxt.className = "text-xs text-rose-400 font-bold animate-pulse";
+            showToast("Recording PC microphone (4s)...", "running");
+
+            const interval = setInterval(() => {
+                countdown--;
+                if (countdown > 0) {
+                    statusTxt.innerText = `🔴 PC Mic Listening (${countdown}s)... Speak clearly!`;
+                } else {
+                    statusTxt.innerText = "⏳ Transcribing speech audio...";
+                    statusTxt.className = "text-xs text-amber-400 font-mono";
+                    clearInterval(interval);
+                }
+            }, 1000);
+
+            try {
+                const res = await fetch('/api/omni/voice/listen', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ duration: 4.0, auto_execute: true })
+                });
+                clearInterval(interval);
+                const data = await res.json();
+
+                if (data.success && data.transcription) {
+                    statusTxt.innerText = `Recognized: "${data.transcription}"`;
+                    statusTxt.className = "text-xs text-cyan-300 font-mono";
+                    const execMode = data.execution?.mode || "FAST_REFLEX";
+                    const execMsg = data.execution?.result?.message || data.execution?.result?.final_answer || data.message;
+                    showToast(`[${execMode}] ${data.transcription}`, "done", data.latency_ms);
+                    speakText(execMsg || data.transcription);
+                    fetchTelemetry();
+                } else {
+                    statusTxt.innerText = data.error || "No speech detected in audio stream.";
+                    statusTxt.className = "text-xs text-slate-400";
+                    showToast(data.error || "No speech detected", "error");
+                }
+            } catch (e) {
+                clearInterval(interval);
+                statusTxt.innerText = `Voice error: ${e.message}`;
+                statusTxt.className = "text-xs text-rose-400";
+                showToast(`Voice error: ${e.message}`, "error");
+            } finally {
+                isRecordingVoice = false;
+                micBtn.classList.remove('glow-magenta', 'scale-110');
+                micBtn.classList.replace('from-rose-500', 'from-cyan-500');
+                if (pulseRing) pulseRing.classList.add('hidden');
+            }
+        }
+
+        function recordPhoneVoice() {
+            const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRec) {
+                showToast("Phone mic blocked on HTTP. Switched to PC Mic!", "running");
+                setMicMode('pc');
+                recordWorkstationVoice();
+                return;
+            }
+
+            const micBtn = document.getElementById('mobile-mic-btn');
+            const pulseRing = document.getElementById('mic-pulse-ring');
+            const statusTxt = document.getElementById('voice-status-text');
+
+            if (isRecordingVoice) {
+                if (speechRecognitionInstance) speechRecognitionInstance.stop();
+                return;
+            }
+
+            try {
+                speechRecognitionInstance = new SpeechRec();
+                speechRecognitionInstance.lang = 'en-US';
+                speechRecognitionInstance.interimResults = false;
+
+                speechRecognitionInstance.onstart = () => {
+                    isRecordingVoice = true;
+                    micBtn.classList.add('glow-magenta', 'scale-110');
+                    micBtn.classList.replace('from-cyan-500', 'from-rose-500');
+                    if (pulseRing) pulseRing.classList.remove('hidden');
+                    statusTxt.innerText = "🔴 Listening... Speak clearly into phone";
+                    statusTxt.className = "text-xs text-rose-400 font-bold animate-pulse";
+                    showToast("Phone mic listening...", "running");
+                };
+
+                speechRecognitionInstance.onresult = (evt) => {
+                    const text = evt.results[0][0].transcript;
+                    statusTxt.innerText = `Recognized: "${text}"`;
+                    statusTxt.className = "text-xs text-cyan-300 font-mono";
+                    executeGoal(text);
+                };
+
+                speechRecognitionInstance.onerror = (evt) => {
+                    statusTxt.innerText = `Browser Speech error (${evt.error}). Falling back to PC Mic.`;
+                    statusTxt.className = "text-xs text-amber-400";
+                    showToast(`Phone mic: ${evt.error}. Switching to PC Mic...`, "running");
+                    setTimeout(() => {
+                        setMicMode('pc');
+                        recordWorkstationVoice();
+                    }, 500);
+                };
+
+                speechRecognitionInstance.onend = () => {
+                    isRecordingVoice = false;
+                    micBtn.classList.remove('glow-magenta', 'scale-110');
+                    micBtn.classList.replace('from-rose-500', 'from-cyan-500');
+                    if (pulseRing) pulseRing.classList.add('hidden');
+                };
+
+                speechRecognitionInstance.start();
+            } catch (err) {
+                showToast("WebSpeech unavailable. Switching to PC Mic!", "running");
+                setMicMode('pc');
+                recordWorkstationVoice();
+            }
+        }
+
+        function toggleMobileVoice() {
+            if (currentMicMode === 'pc') {
+                recordWorkstationVoice();
+            } else {
+                recordPhoneVoice();
+            }
+        }
+
+        // 6. Live Screen Mirroring
+        function refreshScreenSnapshot() {
+            const img = document.getElementById('live-screen-img');
+            const overlay = document.getElementById('screen-loading-overlay');
+            if (overlay) overlay.classList.remove('hidden');
+            const ts = Date.now();
+            img.onload = () => {
+                if (overlay) overlay.classList.add('hidden');
+            };
+            img.onerror = () => {
+                if (overlay) overlay.classList.add('hidden');
+            };
+            img.src = `/api/omni/screen_capture?t=${ts}`;
+        }
+
+        function toggleAutoStream(enable) {
+            if (enable) {
+                refreshScreenSnapshot();
+                screenStreamInterval = setInterval(refreshScreenSnapshot, 2000);
+            } else {
+                clearInterval(screenStreamInterval);
+                screenStreamInterval = null;
+            }
+        }
+
+        let lastScreenClickTime = 0;
+        function spawnScreenRipple(x, y) {
+            const container = document.getElementById('screen-container');
+            if (!container) return;
+            const dot = document.createElement('div');
+            dot.className = 'tap-ripple';
+            dot.style.left = `${x}px`;
+            dot.style.top = `${y}px`;
+            container.appendChild(dot);
+            setTimeout(() => { if (dot.parentNode) dot.parentNode.removeChild(dot); }, 480);
+        }
+
+        // Tap on screen image to click on physical PC with visual tactile feedback
+        async function handleScreenClick(evt) {
+            if (Date.now() - lastScreenClickTime < 300) return;
+            lastScreenClickTime = Date.now();
+            if (evt.cancelable) evt.preventDefault();
+
+            const img = document.getElementById('live-screen-img');
+            const rect = img.getBoundingClientRect();
+            const pt = (evt.touches && evt.touches[0]) || (evt.changedTouches && evt.changedTouches[0]) || evt;
+            
+            const relX = pt.clientX - rect.left;
+            const relY = pt.clientY - rect.top;
+            const normX = Math.max(0, Math.min(1, relX / rect.width));
+            const normY = Math.max(0, Math.min(1, relY / rect.height));
+
+            spawnScreenRipple(relX, relY);
+
+            try {
+                await fetch('/api/omni/remote_click', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ x: normX, y: normY, button: 'left' })
+                });
+                showToast(`Screen Tap [${Math.round(normX*100)}%, ${Math.round(normY*100)}%]`, "done", 12);
+                setTimeout(refreshScreenSnapshot, 220);
+            } catch (e) {
+                showToast(`Click failed: ${e.message}`, "error");
+            }
+        }
+
+        async function sendRemoteClick(btn) {
+            try {
+                await fetch('/api/omni/remote_click', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ button: btn })
+                });
+                showToast(`Dispatched ${btn} click`, "done", 8);
+            } catch (e) {}
+        }
+
+        // 7. Remote File Explorer Logic
+        let cachedDirectoryItems = [];
+
+        function getFileIcon(filename, isDir) {
+            if (isDir) return { icon: 'fa-folder', color: 'text-amber-400' };
+            const ext = filename.split('.').pop().toLowerCase();
+            switch (ext) {
+                case 'py': return { icon: 'fa-brands fa-python', color: 'text-emerald-400' };
+                case 'c':
+                case 'cpp':
+                case 'h':
+                case 'hpp': return { icon: 'fa-solid fa-file-code', color: 'text-blue-400' };
+                case 'html':
+                case 'css':
+                case 'js':
+                case 'json': return { icon: 'fa-brands fa-js', color: 'text-cyan-400' };
+                case 'png':
+                case 'jpg':
+                case 'jpeg':
+                case 'gif':
+                case 'svg':
+                case 'ico': return { icon: 'fa-solid fa-image', color: 'text-pink-400' };
+                case 'md':
+                case 'txt':
+                case 'log': return { icon: 'fa-solid fa-file-lines', color: 'text-slate-300' };
+                case 'exe':
+                case 'bat':
+                case 'cmd':
+                case 'ps1': return { icon: 'fa-solid fa-terminal', color: 'text-amber-400' };
+                case 'zip':
+                case 'tar':
+                case 'gz':
+                case '7z': return { icon: 'fa-solid fa-file-zipper', color: 'text-purple-400' };
+                default: return { icon: 'fa-solid fa-file', color: 'text-slate-400' };
+            }
+        }
+
+        function renderDirectoryItems(items) {
+            const container = document.getElementById('file-items-list');
+            if (!items || items.length === 0) {
+                container.innerHTML = '<div class="text-center py-8 text-slate-500">Folder is empty</div>';
+                return;
+            }
+            let html = '';
+            items.forEach(item => {
+                const isDir = item.is_dir;
+                const iconInfo = getFileIcon(item.name, isDir);
+                const escPath = escapeQuotes(item.path);
+
+                html += `
+                    <div class="flex items-center justify-between p-2 rounded-xl bg-slate-950/70 border border-slate-800/80 hover:border-cyan-500/50 transition">
+                        <div class="flex items-center space-x-2.5 truncate flex-1 cursor-pointer" onclick="${isDir ? `browseDirectory('${escPath}')` : `openFilePreview('${escPath}')`}">
+                            <i class="${iconInfo.icon} ${iconInfo.color} text-sm shrink-0"></i>
+                            <span class="truncate text-slate-200 ${isDir ? 'font-bold' : ''}">${escapeHtml(item.name)}</span>
+                        </div>
+                        <div class="flex items-center space-x-2 shrink-0">
+                            <span class="text-[10px] text-slate-500">${isDir ? 'DIR' : item.size_kb + ' KB'}</span>
+                            <button onclick="openFileOnDesktop('${escPath}')" title="Open on PC Desktop" class="w-6 h-6 rounded bg-slate-900 border border-slate-800 hover:border-cyan-400 flex items-center justify-center text-cyan-400">
+                                <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        function filterFiles() {
+            const query = (document.getElementById('file-filter-input').value || '').toLowerCase().trim();
+            if (!query) {
+                renderDirectoryItems(cachedDirectoryItems);
+                return;
+            }
+            const filtered = cachedDirectoryItems.filter(item => item.name.toLowerCase().includes(query));
+            renderDirectoryItems(filtered);
+        }
+
+        async function browseDirectory(path) {
+            const container = document.getElementById('file-items-list');
+            const display = document.getElementById('current-dir-display');
+            const filterInput = document.getElementById('file-filter-input');
+            if (filterInput) filterInput.value = '';
+            container.innerHTML = '<div class="text-center py-8 text-cyan-400"><i class="fa-solid fa-spinner fa-spin mr-2"></i>Reading directory...</div>';
+
+            try {
+                const url = path ? `/api/omni/fs/browse?path=${encodeURIComponent(path)}` : '/api/omni/fs/browse';
+                const res = await fetch(url);
+                const data = await res.json();
+                if (data.error) {
+                    container.innerHTML = `<div class="text-rose-400 p-3 text-center">${data.error}</div>`;
+                    return;
+                }
+
+                currentBrowsePath = data.current_path;
+                display.innerText = data.current_path;
+                display.title = data.current_path;
+                cachedDirectoryItems = data.items || [];
+                renderDirectoryItems(cachedDirectoryItems);
+            } catch (e) {
+                container.innerHTML = `<div class="text-rose-400 p-3 text-center">Error: ${e.message}</div>`;
+            }
+        }
+
+        function goUpDirectory() {
+            if (!currentBrowsePath) return;
+            const parts = currentBrowsePath.replace(/\\+$/, '').split('\\');
+            if (parts.length > 1) {
+                parts.pop();
+                const parent = parts.join('\\') || 'C:\\';
+                browseDirectory(parent);
+            }
+        }
+
+        async function openFileOnDesktop(path) {
+            try {
+                const res = await fetch('/api/omni/fs/open', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ path: path })
+                });
+                const data = await res.json();
+                showToast(data.message || "Opened on physical PC monitor", "done", 15);
+            } catch (e) {
+                showToast(`Open failed: ${e.message}`, "error");
+            }
+        }
+
+        async function openFilePreview(path) {
+            const modal = document.getElementById('file-preview-modal');
+            const nameEl = document.getElementById('preview-filename');
+            const contEl = document.getElementById('preview-content');
+            modal.classList.remove('hidden');
+            nameEl.innerText = path.split('\\').pop();
+            contEl.innerText = "Loading text...";
+
+            try {
+                const res = await fetch(`/api/omni/fs/read?path=${encodeURIComponent(path)}`);
+                const data = await res.json();
+                contEl.innerText = data.content || "(Empty file or binary format)";
+            } catch (e) {
+                contEl.innerText = "Error previewing file: " + e.message;
+            }
+        }
+
+        function closeFilePreview() {
+            document.getElementById('file-preview-modal').classList.add('hidden');
+        }
+
+        // 8. Task Manager & Executed Tasks
+        function switchTaskSubtab(sub) {
+            const btnHist = document.getElementById('subtab-btn-history');
+            const btnProc = document.getElementById('subtab-btn-procs');
+            const btnCat = document.getElementById('subtab-btn-catalog');
+            const viewHist = document.getElementById('task-view-history');
+            const viewProc = document.getElementById('task-view-procs');
+            const viewCat = document.getElementById('task-view-catalog');
+
+            btnHist.className = "flex-1 py-1.5 rounded-lg text-slate-400 hover:text-white transition";
+            btnProc.className = "flex-1 py-1.5 rounded-lg text-slate-400 hover:text-white transition";
+            if (btnCat) btnCat.className = "flex-1 py-1.5 rounded-lg text-slate-400 hover:text-white transition";
+            viewHist.classList.add('hidden');
+            viewProc.classList.add('hidden');
+            if (viewCat) viewCat.classList.add('hidden');
+
+            if (sub === 'history') {
+                btnHist.className = "flex-1 py-1.5 rounded-lg bg-cyan-500 text-slate-950 font-bold transition";
+                viewHist.classList.remove('hidden');
+                loadExecutionHistory();
+            } else if (sub === 'procs') {
+                btnProc.className = "flex-1 py-1.5 rounded-lg bg-cyan-500 text-slate-950 font-bold transition";
+                viewProc.classList.remove('hidden');
+                loadProcesses();
+            } else if (sub === 'catalog') {
+                if (btnCat) btnCat.className = "flex-1 py-1.5 rounded-lg bg-cyan-500 text-slate-950 font-bold transition";
+                if (viewCat) viewCat.classList.remove('hidden');
+                loadCatalog();
+            }
+        }
+
+        let cachedCatalog = [];
+        async function loadCatalog() {
+            const list = document.getElementById('catalog-list');
+            list.innerHTML = '<div class="text-center py-6 text-slate-500"><i class="fa-solid fa-spinner fa-spin mr-2"></i>Indexing installed applications...</div>';
+            try {
+                const res = await fetch('/api/omni/catalog');
+                const data = await res.json();
+                cachedCatalog = data.apps || [];
+                const badge = document.getElementById('catalog-count-badge');
+                if (badge) badge.innerText = `${cachedCatalog.length} Apps`;
+                renderCatalog(cachedCatalog);
+            } catch (e) {
+                list.innerHTML = `<div class="text-rose-400 p-3">Error: ${e.message}</div>`;
+            }
+        }
+
+        function renderCatalog(apps) {
+            const list = document.getElementById('catalog-list');
+            if (!apps || apps.length === 0) {
+                list.innerHTML = '<div class="text-center py-8 text-slate-500">No matching applications found</div>';
+                return;
+            }
+            let html = '';
+            apps.forEach(a => {
+                const typeIcon = a.type === 'shortcut' ? 'fa-link text-indigo-400' : 'fa-gear text-cyan-400';
+                html += `
+                    <div class="flex items-center justify-between p-2 rounded-xl bg-slate-950/70 border border-slate-800 hover:border-cyan-500/40 transition">
+                        <div class="truncate flex-1 pr-2">
+                            <div class="font-bold text-slate-200 truncate flex items-center space-x-1.5">
+                                <i class="fa-solid ${typeIcon} text-[10px]"></i>
+                                <span>${escapeHtml(a.name)}</span>
+                            </div>
+                            <div class="text-[9px] text-slate-500 font-mono truncate">${escapeHtml(a.path)}</div>
+                        </div>
+                        <button onclick="launchApp('${escapeHtml(a.alias || a.name)}', '${escapeHtml(a.name)}')" class="px-2.5 py-1 bg-cyan-600/30 hover:bg-cyan-500 text-cyan-300 hover:text-slate-950 font-bold rounded-lg text-[10px] transition shrink-0">
+                            Launch
+                        </button>
+                    </div>
+                `;
+            });
+            list.innerHTML = html;
+        }
+
+        function filterCatalog() {
+            const q = document.getElementById('catalog-filter-input').value.toLowerCase().trim();
+            if (!q) {
+                renderCatalog(cachedCatalog);
+                return;
+            }
+            const filtered = cachedCatalog.filter(a => a.name.toLowerCase().includes(q) || (a.alias && a.alias.toLowerCase().includes(q)));
+            renderCatalog(filtered);
+        }
+
+        async function loadExecutionHistory() {
+            const list = document.getElementById('execution-history-list');
+            list.innerHTML = '<div class="text-center py-6 text-slate-500">Loading history...</div>';
+            try {
+                const res = await fetch('/api/omni/history');
+                const data = await res.json();
+                const hist = data.history || [];
+                if (hist.length === 0) {
+                    list.innerHTML = '<div class="text-center py-8 text-slate-500">No executed tasks recorded yet</div>';
+                    return;
+                }
+                let html = '';
+                hist.forEach(h => {
+                    const badgeCol = h.mode.includes('FAST') ? 'text-emerald-400' : (h.mode.includes('PARALLEL') ? 'text-cyan-400' : 'text-amber-400');
+                    html += `
+                        <div class="p-2.5 rounded-xl bg-slate-950/70 border border-slate-800 space-y-1">
+                            <div class="flex items-center justify-between text-[10px]">
+                                <span class="font-bold ${badgeCol}">[${h.mode}]</span>
+                                <span class="text-slate-500">${h.timestamp} • ${h.latency_ms}ms</span>
+                            </div>
+                            <div class="text-slate-200 font-semibold truncate">${escapeHtml(h.goal)}</div>
+                            <div class="text-[11px] text-slate-400 truncate">${escapeHtml(h.message || '')}</div>
+                        </div>
+                    `;
+                });
+                list.innerHTML = html;
+            } catch (e) {
+                list.innerHTML = `<div class="text-rose-400 p-3">Error: ${e.message}</div>`;
+            }
+        }
+
+        async function loadProcesses() {
+            const list = document.getElementById('processes-list');
+            list.innerHTML = '<div class="text-center py-6 text-slate-500">Scanning processes...</div>';
+            try {
+                const res = await fetch('/api/omni/processes?limit=40');
+                const data = await res.json();
+                cachedProcesses = data.processes || [];
+                renderProcesses(cachedProcesses);
+            } catch (e) {
+                list.innerHTML = `<div class="text-rose-400 p-3">Error: ${e.message}</div>`;
+            }
+        }
+
+        function renderProcesses(procs) {
+            const list = document.getElementById('processes-list');
+            let html = '';
+            procs.forEach(p => {
+                html += `
+                    <div class="flex items-center justify-between p-2 rounded-xl bg-slate-950/70 border border-slate-800">
+                        <div class="truncate flex-1">
+                            <div class="font-bold text-slate-200 truncate">${escapeHtml(p.name)}</div>
+                            <div class="text-[10px] text-slate-500 font-mono">PID ${p.pid} • ${p.ram_mb} MB RAM</div>
+                        </div>
+                        <button onclick="killProcess(${p.pid}, '${escapeQuotes(p.name)}')" class="px-2 py-1 bg-rose-950/60 hover:bg-rose-900 border border-rose-800 text-rose-300 rounded text-[10px] font-bold shrink-0">
+                            Kill
+                        </button>
+                    </div>
+                `;
+            });
+            list.innerHTML = html || '<div class="text-center py-6 text-slate-500">No matching processes</div>';
+        }
+
+        function filterProcesses() {
+            const q = document.getElementById('proc-filter-input').value.toLowerCase();
+            const filtered = cachedProcesses.filter(p => p.name.toLowerCase().includes(q));
+            renderProcesses(filtered);
+        }
+
+        async function killProcess(pid, name) {
+            if (!confirm(`Terminate ${name} (PID ${pid})?`)) return;
+            try {
+                const res = await fetch('/api/omni/processes/kill', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ pid: pid })
+                });
+                const data = await res.json();
+                showToast(data.message || `Terminated PID ${pid}`, "done", 10);
+                loadProcesses();
+            } catch (e) {
+                showToast(`Kill error: ${e.message}`, "error");
+            }
+        }
+
+        // 9. Webhook Generator & Triggers
+        function generateWebhookSnippet() {
+            const sel = document.getElementById('webhook-select-action').value;
+            const goalField = document.getElementById('webhook-goal-field');
+            const goalVal = document.getElementById('webhook-goal-text').value.trim();
+            const out = document.getElementById('webhook-url-output');
+
+            const origin = window.location.origin;
+            let url = '';
+            if (sel === 'goal') {
+                goalField.classList.remove('hidden');
+                url = `${origin}/webhook/trigger?goal=${encodeURIComponent(goalVal)}`;
+            } else {
+                goalField.classList.add('hidden');
+                url = `${origin}/webhook/trigger?action=${sel}`;
+            }
+            out.value = url;
+        }
+
+        async function testWebhookNow() {
+            const url = document.getElementById('webhook-url-output').value;
+            showToast("Calling webhook...", "running");
+            try {
+                const res = await fetch(url);
+                const data = await res.json();
+                showToast(`Webhook Success [${data.mode}]: ${data.result?.message || 'OK'}`, "done", data.latency_ms);
+            } catch (e) {
+                showToast(`Webhook call error: ${e.message}`, "error");
+            }
+        }
+
+        async function triggerWebhookDirect(act) {
+            showToast(`Webhook: ${act}...`, "running");
+            try {
+                const res = await fetch(`/webhook/trigger?action=${act}`);
+                const data = await res.json();
+                showToast(`Webhook [${act}]: ${data.result?.message || 'OK'}`, "done", data.latency_ms);
+            } catch (e) {
+                showToast(`Error: ${e.message}`, "error");
+            }
+        }
+
+        function copyWebhookUrl() {
+            const copyText = document.getElementById('webhook-url-output');
+            copyText.select();
+            navigator.clipboard.writeText(copyText.value);
+            showToast("Copied webhook URL to clipboard!", "done", 0);
+        }
+
+        // 10. High-Performance Zero-Drop Virtual Trackpad Engine
+        const touchpad = document.getElementById('touchpad-area');
+        const touchIndicator = document.getElementById('touchpad-indicator');
+        const scrollStrip = document.getElementById('touchpad-scroll-strip');
+
+        let moveSensitivity = 1.8;
+        let pendingDx = 0;
+        let pendingDy = 0;
+        let isFlushingMove = false;
+        let isDragLocked = false;
+
+        let lastTouchX = 0, lastTouchY = 0;
+        let isTouching = false;
+        let touchStartTime = 0;
+        let hasMovedSignificantly = false;
+        let lastTwoFingerY = 0;
+
+        function setSensitivity(val, btn) {
+            moveSensitivity = parseFloat(val);
+            document.querySelectorAll('.sens-btn').forEach(b => {
+                b.className = "sens-btn px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-400";
+            });
+            if (btn) {
+                btn.className = "sens-btn px-1.5 py-0.5 rounded bg-cyan-950 border border-cyan-700 text-cyan-300 font-bold";
+            }
+            showToast(`Trackpad Sensitivity: ${val}x`, "done", 0);
+        }
+
+        function toggleDragLock() {
+            isDragLocked = !isDragLocked;
+            const btn = document.getElementById('btn-drag-lock');
+            if (isDragLocked) {
+                btn.className = "py-2.5 bg-amber-500 text-slate-950 font-black border border-amber-400 rounded-xl transition text-[11px]";
+                fetch('/api/omni/remote_click', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ button: 'left_down' })
+                }).catch(() => {});
+                showToast("Drag Lock: Mouse Button Held Down", "running");
+            } else {
+                btn.className = "py-2.5 bg-slate-900 border border-slate-800 active:bg-amber-500 rounded-xl text-slate-300 transition text-[11px]";
+                fetch('/api/omni/remote_click', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ button: 'left_up' })
+                }).catch(() => {});
+                showToast("Drag Lock Released", "done", 5);
+            }
+        }
+
+        // Flushes accumulated deltas at ~45Hz with zero pixel loss
+        setInterval(async () => {
+            if (isFlushingMove) return;
+            const sendDx = Math.round(pendingDx);
+            const sendDy = Math.round(pendingDy);
+            if (sendDx === 0 && sendDy === 0) return;
+
+            pendingDx -= sendDx;
+            pendingDy -= sendDy;
+            isFlushingMove = true;
+            try {
+                await fetch('/api/omni/remote_input', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'move', dx: sendDx, dy: sendDy })
+                });
+            } catch (e) {}
+            isFlushingMove = false;
+        }, 22);
+
+        // Touch event listeners on main trackpad
+        if (touchpad) {
+            touchpad.addEventListener('touchstart', (e) => {
+                if (e.cancelable) e.preventDefault();
+                touchStartTime = Date.now();
+                hasMovedSignificantly = false;
+
+                if (e.touches.length === 1) {
+                    isTouching = true;
+                    lastTouchX = e.touches[0].clientX;
+                    lastTouchY = e.touches[0].clientY;
+
+                    if (touchIndicator) {
+                        const rect = touchpad.getBoundingClientRect();
+                        touchIndicator.style.left = `${lastTouchX - rect.left}px`;
+                        touchIndicator.style.top = `${lastTouchY - rect.top}px`;
+                        touchIndicator.classList.remove('hidden');
+                    }
+                } else if (e.touches.length === 2) {
+                    // Two-finger scroll start
+                    lastTwoFingerY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+                    if (touchIndicator) touchIndicator.classList.add('hidden');
+                }
+            }, { passive: false });
+
+            touchpad.addEventListener('touchmove', (e) => {
+                if (e.cancelable) e.preventDefault();
+
+                if (e.touches.length === 1 && isTouching) {
+                    const curX = e.touches[0].clientX;
+                    const curY = e.touches[0].clientY;
+                    const rawDx = curX - lastTouchX;
+                    const rawDy = curY - lastTouchY;
+
+                    if (Math.abs(rawDx) > 1.2 || Math.abs(rawDy) > 1.2) {
+                        hasMovedSignificantly = true;
+                    }
+
+                    pendingDx += rawDx * moveSensitivity;
+                    pendingDy += rawDy * moveSensitivity;
+
+                    lastTouchX = curX;
+                    lastTouchY = curY;
+
+                    if (touchIndicator) {
+                        const rect = touchpad.getBoundingClientRect();
+                        const localX = Math.max(12, Math.min(rect.width - 12, curX - rect.left));
+                        const localY = Math.max(12, Math.min(rect.height - 12, curY - rect.top));
+                        touchIndicator.style.left = `${localX}px`;
+                        touchIndicator.style.top = `${localY}px`;
+                    }
+                } else if (e.touches.length === 2) {
+                    // Two-finger scroll detection
+                    hasMovedSignificantly = true;
+                    const curTwoFingerY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+                    const scrollDelta = curTwoFingerY - lastTwoFingerY;
+                    if (Math.abs(scrollDelta) > 5) {
+                        sendScroll(scrollDelta > 0 ? 1 : -1);
+                        lastTwoFingerY = curTwoFingerY;
+                    }
+                }
+            }, { passive: false });
+
+            touchpad.addEventListener('touchend', (e) => {
+                if (e.cancelable) e.preventDefault();
+                const elapsed = Date.now() - touchStartTime;
+
+                // Tap detection (quick tap without significant movement)
+                if (isTouching && !hasMovedSignificantly && elapsed < 260) {
+                    if (e.changedTouches.length === 1 && !isDragLocked) {
+                        sendRemoteClick('left');
+                    }
+                }
+
+                if (e.touches.length === 0) {
+                    isTouching = false;
+                    if (touchIndicator) touchIndicator.classList.add('hidden');
+                }
+            }, { passive: false });
+
+            // Pointer fallback for testing with laptop mouse or external pointer
+            let isPointerDown = false;
+            touchpad.addEventListener('pointerdown', (e) => {
+                if (e.pointerType === 'mouse') {
+                    isPointerDown = true;
+                    lastTouchX = e.clientX;
+                    lastTouchY = e.clientY;
+                }
+            });
+            window.addEventListener('pointermove', (e) => {
+                if (isPointerDown) {
+                    const dx = (e.clientX - lastTouchX) * moveSensitivity;
+                    const dy = (e.clientY - lastTouchY) * moveSensitivity;
+                    pendingDx += dx;
+                    pendingDy += dy;
+                    lastTouchX = e.clientX;
+                    lastTouchY = e.clientY;
+                }
+            });
+            window.addEventListener('pointerup', (e) => {
+                if (isPointerDown) isPointerDown = false;
+            });
+        }
+
+        // Dedicated 1-Finger Vertical Scroll Strip
+        let lastScrollY = 0;
+        let isScrollingStrip = false;
+        let isSendingScroll = false;
+
+        async function sendScroll(delta) {
+            if (isSendingScroll) return;
+            isSendingScroll = true;
+            try {
+                await fetch('/api/omni/remote_input', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'scroll', delta: delta })
+                });
+            } catch (e) {}
+            setTimeout(() => { isSendingScroll = false; }, 60);
+        }
+
+        if (scrollStrip) {
+            scrollStrip.addEventListener('touchstart', (e) => {
+                if (e.cancelable) e.preventDefault();
+                isScrollingStrip = true;
+                lastScrollY = e.touches[0].clientY;
+            }, { passive: false });
+
+            scrollStrip.addEventListener('touchmove', (e) => {
+                if (e.cancelable) e.preventDefault();
+                if (!isScrollingStrip) return;
+                const curY = e.touches[0].clientY;
+                const diff = curY - lastScrollY;
+                if (Math.abs(diff) > 10) {
+                    sendScroll(diff > 0 ? 1 : -1);
+                    lastScrollY = curY;
+                }
+            }, { passive: false });
+
+            scrollStrip.addEventListener('touchend', (e) => {
+                if (e.cancelable) e.preventDefault();
+                isScrollingStrip = false;
+            }, { passive: false });
+
+            scrollStrip.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                sendScroll(e.deltaY > 0 ? -1 : 1);
+            }, { passive: false });
+        }
+
+        async function sendRemoteTyping() {
+            const input = document.getElementById('remote-typing-input');
+            const text = input.value;
+            if (!text) return;
+            try {
+                await fetch('/api/omni/remote_input', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'text', text: text })
+                });
+                input.value = '';
+                showToast(`Sent ${text.length} chars to active PC window`, "done", 10);
+            } catch (e) {
+                showToast(`Typing failed: ${e.message}`, "error");
+            }
+        }
+
+        async function sendRemoteKey(keyName) {
+            try {
+                await fetch('/api/omni/remote_input', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'key', key: keyName })
+                });
+                showToast(`Sent key: ${keyName}`, "done", 5);
+            } catch (e) {}
+        }
+
+        // Global Toast feedback (Visible across all 6 tabs)
+        let toastTimeout = null;
+        function showToast(msg, state="done", lat=0) {
+            // Update Tab 1 persistent log
+            const obsMsg = document.getElementById('obs-message');
+            const obsLat = document.getElementById('obs-latency');
+            if (obsMsg) obsMsg.innerText = msg;
+            if (obsLat) obsLat.innerText = lat ? `${lat} ms` : (state === 'running' ? 'Running...' : 'Ready');
+
+            // Update Global Floating Toast
+            const container = document.getElementById('global-toast-container');
+            const textEl = document.getElementById('global-toast-text');
+            const latEl = document.getElementById('global-toast-latency');
+            const iconEl = document.getElementById('global-toast-icon');
+            const pillEl = document.getElementById('global-toast-pill');
+
+            if (container && textEl) {
+                textEl.innerText = msg;
+                if (latEl) latEl.innerText = lat ? `${lat} ms` : (state === 'running' ? 'Active' : 'OK');
+                
+                if (iconEl) {
+                    if (state === 'running') {
+                        iconEl.className = "w-6 h-6 rounded-lg bg-blue-500/20 text-cyan-400 flex items-center justify-center shrink-0 text-xs";
+                        iconEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+                        if (pillEl) pillEl.style.borderColor = 'rgba(0, 242, 254, 0.6)';
+                    } else if (state === 'error') {
+                        iconEl.className = "w-6 h-6 rounded-lg bg-rose-500/20 text-rose-400 flex items-center justify-center shrink-0 text-xs";
+                        iconEl.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i>';
+                        if (pillEl) pillEl.style.borderColor = 'rgba(244, 63, 94, 0.6)';
+                    } else {
+                        iconEl.className = "w-6 h-6 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 text-xs";
+                        iconEl.innerHTML = '<i class="fa-solid fa-check"></i>';
+                        if (pillEl) pillEl.style.borderColor = 'rgba(16, 185, 129, 0.6)';
+                    }
+                }
+
+                container.classList.remove('-translate-y-20', 'opacity-0');
+                container.classList.add('translate-y-0', 'opacity-100');
+
+                if (toastTimeout) clearTimeout(toastTimeout);
+                if (state !== 'running') {
+                    toastTimeout = setTimeout(dismissGlobalToast, 3200);
+                }
+            }
+        }
+
+        function dismissGlobalToast() {
+            const container = document.getElementById('global-toast-container');
+            if (container) {
+                container.classList.remove('translate-y-0', 'opacity-100');
+                container.classList.add('-translate-y-20', 'opacity-0');
+            }
+        }
+
+        function refreshAll() {
+            fetchTelemetry();
+            if (currentTab === 'screen') refreshScreenSnapshot();
+            if (currentTab === 'files') browseDirectory(currentBrowsePath);
+            if (currentTab === 'tasks') loadExecutionHistory();
+        }
+
+        function escapeHtml(s) {
+            return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        }
+        function escapeQuotes(s) {
+            return String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+        }
+
+        // Initialize on page load
+        window.onload = function() {
+            fetchTelemetry();
+            generateWebhookSnippet();
+            setInterval(fetchTelemetry, 5000);
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,46 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C / C++ intermediate build artifacts
+*.obj
+*.o
+*.a
+*.lib
+*.so
+*.dylib
+*.dll
+build/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+
+# Ignore scratch/temporary binaries, keep prebuilt core binaries
+*.exe
+!axiom_cli.exe
+!axiom_benchmark.exe
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Local backups & runtime data
+.axiom_backups/
+captures/
+*.log
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+
+# IDE / Editor configuration
+.vscode/
+.idea/
+*.swp
+*.swo

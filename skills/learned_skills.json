@@ -1,0 +1,967 @@
+[
+  {
+    "skill_id": "skill_open_vscode",
+    "name": "Launch Visual Studio Code",
+    "triggers": [
+      "open vscode",
+      "open code",
+      "launch vscode",
+      "launch code",
+      "start vscode"
+    ],
+    "tool": "app_control",
+    "args": {
+      "action": "launch",
+      "target": "code"
+    },
+    "success_count": 2,
+    "failure_count": 0,
+    "avg_latency_us": 16344.6,
+    "source": "DEFAULT_REFLEX",
+    "last_executed": 1790263165.5422738
+  },
+  {
+    "skill_id": "skill_minimize_all",
+    "name": "Show Desktop / Minimize Windows",
+    "triggers": [
+      "minimize all windows",
+      "show desktop",
+      "hide windows",
+      "minimize windows",
+      "reveal desktop"
+    ],
+    "tool": "app_control",
+    "args": {
+      "action": "minimize_all"
+    },
+    "success_count": 110,
+    "failure_count": 0,
+    "avg_latency_us": 121390,
+    "source": "DEFAULT_REFLEX",
+    "last_executed": 1790627935.3348467,
+    "confidence": 0.999
+  },
+  {
+    "skill_id": "skill_volume_mute",
+    "name": "Master Volume Mute",
+    "triggers": [
+      "mute sound",
+      "mute volume",
+      "mute audio",
+      "silence pc",
+      "toggle mute"
+    ],
+    "tool": "media_control",
+    "args": {
+      "action": "mute"
+    },
+    "success_count": 155,
+    "failure_count": 0,
+    "avg_latency_us": 50170,
+    "source": "DEFAULT_REFLEX",
+    "last_executed": 1790627935.1859548,
+    "confidence": 0.999
+  },
+  {
+    "skill_id": "skill_volume_up",
+    "name": "Volume Increase",
+    "triggers": [
+      "volume up",
+      "increase volume",
+      "louder sound",
+      "raise volume",
+      "turn up volume"
+    ],
+    "tool": "media_control",
+    "args": {
+      "action": "volume_up"
+    },
+    "success_count": 2,
+    "failure_count": 0,
+    "avg_latency_us": 25693.7,
+    "source": "DEFAULT_REFLEX",
+    "last_executed": 1790261046.8658524
+  },
+  {
+    "skill_id": "skill_volume_down",
+    "name": "Volume Decrease",
+    "triggers": [
+      "volume down",
+      "decrease volume",
+      "lower sound",
+      "lower volume",
+      "turn down volume"
+    ],
+    "tool": "media_control",
+    "args": {
+      "action": "volume_down"
+    },
+    "success_count": 1,
+    "failure_count": 0,
+    "avg_latency_us": 20.0,
+    "source": "DEFAULT_REFLEX"
+  },
+  {
+    "skill_id": "skill_open_notepad",
+    "name": "Launch Windows Notepad",
+    "triggers": [
+      "open notepad",
+      "launch notepad",
+      "start notepad",
+      "new text document"
+    ],
+    "tool": "app_control",
+    "args": {
+      "action": "launch",
+      "target": "notepad"
+    },
+    "success_count": 5,
+    "failure_count": 0,
+    "avg_latency_us": 79915,
+    "source": "DEFAULT_REFLEX",
+    "last_executed": 1790285280.6451042,
+    "confidence": 0.9043
+  },
+  {
+    "skill_id": "skill_open_calc",
+    "name": "Launch Calculator",
+    "triggers": [
+      "open calc",
+      "open calculator",
+      "launch calculator",
+      "start calc"
+    ],
+    "tool": "app_control",
+    "args": {
+      "action": "launch",
+      "target": "calc"
+    },
+    "success_count": 7,
+    "failure_count": 0,
+    "avg_latency_us": 421115,
+    "source": "DEFAULT_REFLEX",
+    "last_executed": 1790285596.7069638,
+    "confidence": 0.9029
+  },
+  {
+    "skill_id": "skill_screen_snip",
+    "name": "Screen Snipping Tool",
+    "triggers": [
+      "take screenshot",
+      "snip screen",
+      "capture screen",
+      "screenshot pc",
+      "screen capture"
+    ],
+    "tool": "system_control",
+    "args": {
+      "action": "screenshot"
+    },
+    "success_count": 1,
+    "failure_count": 0,
+    "avg_latency_us": 25.0,
+    "source": "DEFAULT_REFLEX"
+  },
+  {
+    "skill_id": "skill_organize_downloads",
+    "name": "Organize Downloads Folder",
+    "triggers": [
+      "organize downloads",
+      "clean downloads",
+      "sort downloads folder",
+      "tidy downloads"
+    ],
+    "tool": "filesystem_ops",
+    "args": {
+      "action": "organize_downloads"
+    },
+    "success_count": 7,
+    "failure_count": 0,
+    "avg_latency_us": 1099,
+    "source": "DEFAULT_REFLEX",
+    "last_executed": 1790264883.7095203,
+    "confidence": 0.9387
+  },
+  {
+    "skill_id": "skill_free_port_3000",
+    "name": "Liberate Port 3000",
+    "triggers": [
+      "free port 3000",
+      "kill port 3000",
+      "liberate port 3000"
+    ],
+    "tool": "system_control",
+    "args": {
+      "action": "free_port",
+      "target": "3000"
+    },
+    "success_count": 1,
+    "failure_count": 0,
+    "avg_latency_us": 55.0,
+    "source": "DEFAULT_REFLEX"
+  },
+  {
+    "skill_id": "skill_screen_ocr",
+    "name": "Visual Desktop Screen OCR",
+    "triggers": [
+      "read screen",
+      "read my screen",
+      "ocr screen",
+      "what is on my screen",
+      "inspect screen",
+      "read desktop text",
+      "screen ocr",
+      "extract screen text"
+    ],
+    "tool": "screen_ocr",
+    "args": {
+      "action": "read_screen"
+    },
+    "success_count": 1,
+    "failure_count": 0,
+    "avg_latency_us": 65.0,
+    "source": "DEFAULT_REFLEX"
+  },
+  {
+    "skill_id": "skill_open_camera",
+    "name": "Launch Windows Camera",
+    "triggers": [
+      "open camera",
+      "launch camera",
+      "start camera",
+      "open webcam",
+      "camera app",
+      "start webcam"
+    ],
+    "tool": "camera_vision",
+    "args": {
+      "action": "open_camera"
+    },
+    "success_count": 51,
+    "failure_count": 0,
+    "avg_latency_us": 825923,
+    "source": "DEFAULT_REFLEX",
+    "last_executed": 1790627925.4127178,
+    "confidence": 0.9127
+  },
+  {
+    "skill_id": "skill_camera_capture_person",
+    "name": "Capture Photo When Person / Face Appears",
+    "triggers": [
+      "shot a image for if a person face appear",
+      "capture image when person appears",
+      "take picture if face detected",
+      "take photo when face appear",
+      "shot image if person appear",
+      "take picture of person",
+      "shot a image if a person face appear",
+      "capture photo when face appears"
+    ],
+    "tool": "camera_vision",
+    "args": {
+      "action": "detect_and_capture",
+      "detect": "person",
+      "timeout_s": 12.0,
+      "open_viewer": true
+    },
+    "success_count": 45,
+    "failure_count": 0,
+    "avg_latency_us": 10322933,
+    "source": "DEFAULT_REFLEX",
+    "last_executed": 1790627932.856495,
+    "confidence": 0.8765
+  },
+  {
+    "skill_id": "skill_camera_snapshot",
+    "name": "Instant Camera Snapshot",
+    "triggers": [
+      "take photo",
+      "take picture",
+      "capture photo",
+      "snap picture",
+      "camera snapshot",
+      "take a picture",
+      "take a snapshot",
+      "shoot photo"
+    ],
+    "tool": "camera_vision",
+    "args": {
+      "action": "capture",
+      "open_viewer": true
+    },
+    "success_count": 5,
+    "failure_count": 0,
+    "avg_latency_us": 4538135,
+    "source": "DEFAULT_REFLEX",
+    "last_executed": 1790283150.31568,
+    "confidence": 0.8954
+  },
+  {
+    "skill_id": "skill_open_youtube",
+    "name": "Open YouTube in Browser",
+    "triggers": [
+      "open youtube in browser",
+      "open youtube",
+      "launch youtube",
+      "go to youtube",
+      "youtube in browser",
+      "watch youtube"
+    ],
+    "tool": "browser_open",
+    "args": {
+      "url": "https://www.youtube.com"
+    },
+    "success_count": 66,
+    "failure_count": 0,
+    "avg_latency_us": 202618,
+    "source": "DEFAULT_REFLEX",
+    "last_executed": 1790627934.9429386,
+    "confidence": 0.9966
+  },
+  {
+    "skill_id": "skill_open_browser",
+    "name": "Launch Chrome Browser",
+    "triggers": [
+      "open browser",
+      "launch browser",
+      "open chrome",
+      "launch chrome",
+      "start browser"
+    ],
+    "tool": "app_control",
+    "args": {
+      "action": "launch",
+      "target": "chrome"
+    },
+    "success_count": 16,
+    "failure_count": 0,
+    "avg_latency_us": 571622,
+    "source": "DEFAULT_REFLEX",
+    "last_executed": 1790285276.9778104,
+    "confidence": 0.9006
+  },
+  {
+    "skill_id": "skill_play_music",
+    "name": "Live Music Playback",
+    "triggers": [
+      "play music",
+      "play song",
+      "start music",
+      "play beats",
+      "play lofi",
+      "listen to music",
+      "play audio",
+      "play music on youtube"
+    ],
+    "tool": "media_control",
+    "args": {
+      "action": "play_music",
+      "query": ""
+    },
+    "success_count": 50,
+    "failure_count": 0,
+    "avg_latency_us": 1369260,
+    "source": "DEFAULT_REFLEX",
+    "last_executed": 1790627934.300247,
+    "confidence": 0.8994
+  },
+  {
+    "skill_id": "skill_close_notepad",
+    "name": "Close Notepad",
+    "triggers": [
+      "close notepad",
+      "kill notepad",
+      "exit notepad",
+      "stop notepad"
+    ],
+    "tool": "app_control",
+    "args": {
+      "action": "kill",
+      "target": "notepad"
+    },
+    "success_count": 1,
+    "failure_count": 0,
+    "avg_latency_us": 30.0,
+    "source": "DEFAULT_REFLEX"
+  },
+  {
+    "skill_id": "skill_close_calc",
+    "name": "Close Calculator",
+    "triggers": [
+      "close calc",
+      "close calculator",
+      "kill calc",
+      "kill calculator"
+    ],
+    "tool": "app_control",
+    "args": {
+      "action": "kill",
+      "target": "calc"
+    },
+    "success_count": 1,
+    "failure_count": 0,
+    "avg_latency_us": 30.0,
+    "source": "DEFAULT_REFLEX"
+  },
+  {
+    "skill_id": "skill_open_google",
+    "name": "Open Google in Browser",
+    "triggers": [
+      "open google in browser",
+      "open google",
+      "launch google",
+      "search google",
+      "google in browser",
+      "on linkdln continue with google for sign in"
+    ],
+    "tool": "browser_open",
+    "args": {
+      "url": "https://www.google.com"
+    },
+    "success_count": 2,
+    "failure_count": 0,
+    "avg_latency_us": 35.0,
+    "source": "DEFAULT_REFLEX",
+    "last_executed": 1790280749.2943969
+  },
+  {
+    "skill_id": "skill_open_github",
+    "name": "Open GitHub in Browser",
+    "triggers": [
+      "open github in browser",
+      "open github",
+      "launch github",
+      "go to github"
+    ],
+    "tool": "browser_open",
+    "args": {
+      "url": "https://github.com"
+    },
+    "success_count": 1,
+    "failure_count": 0,
+    "avg_latency_us": 35.0,
+    "source": "DEFAULT_REFLEX"
+  },
+  {
+    "skill_id": "skill_web_search",
+    "name": "Web & Google Search",
+    "triggers": [
+      "search google",
+      "google search",
+      "search the web",
+      "search web",
+      "web search",
+      "search internet",
+      "google it"
+    ],
+    "tool": "web_search",
+    "args": {
+      "query": "",
+      "launch_website": false,
+      "open_browser": true
+    },
+    "success_count": 10,
+    "failure_count": 0,
+    "avg_latency_us": 442744,
+    "source": "DEFAULT_REFLEX",
+    "last_executed": 1790279783.2323122,
+    "confidence": 0.9012
+  },
+  {
+    "skill_id": "skill_launch_website",
+    "name": "Direct Website Navigator",
+    "triggers": [
+      "launch website",
+      "open website",
+      "launch its website",
+      "open its website",
+      "go to website",
+      "launch site",
+      "open site"
+    ],
+    "tool": "web_search",
+    "args": {
+      "query": "",
+      "launch_website": true,
+      "open_browser": true
+    },
+    "success_count": 11,
+    "failure_count": 0,
+    "avg_latency_us": 2466637,
+    "source": "DEFAULT_REFLEX",
+    "last_executed": 1790285253.932805,
+    "confidence": 0.8996
+  },
+  {
+    "skill_id": "skill_dark_mode",
+    "name": "Toggle Windows Dark Mode",
+    "triggers": [
+      "toggle dark mode",
+      "dark mode",
+      "light mode",
+      "toggle light mode",
+      "switch theme",
+      "invert theme"
+    ],
+    "tool": "system_theme_control",
+    "args": {
+      "action": "toggle"
+    },
+    "success_count": 2,
+    "failure_count": 0,
+    "avg_latency_us": 219827.5,
+    "source": "DEFAULT_REFLEX",
+    "last_executed": 1790255142.0870295
+  },
+  {
+    "skill_id": "skill_system_vitals",
+    "name": "Live System Vitals & Telemetry",
+    "triggers": [
+      "system vitals",
+      "pc vitals",
+      "cpu usage",
+      "ram usage",
+      "system telemetry",
+      "hardware stats",
+      "hardware vitals"
+    ],
+    "tool": "hardware_control",
+    "args": {
+      "action": "vitals"
+    },
+    "success_count": 2,
+    "failure_count": 0,
+    "avg_latency_us": 47667.3,
+    "source": "DEFAULT_REFLEX",
+    "last_executed": 1790255142.337675
+  },
+  {
+    "skill_id": "skill_battery_info",
+    "name": "Battery & Power Status",
+    "triggers": [
+      "battery status",
+      "battery percentage",
+      "power status",
+      "how much battery",
+      "check battery"
+    ],
+    "tool": "hardware_control",
+    "args": {
+      "action": "battery_info"
+    },
+    "success_count": 2,
+    "failure_count": 0,
+    "avg_latency_us": 23.9,
+    "source": "DEFAULT_REFLEX",
+    "last_executed": 1790255146.9960651
+  },
+  {
+    "skill_id": "skill_brightness_up",
+    "name": "Increase Screen Brightness",
+    "triggers": [
+      "increase brightness",
+      "brightness up",
+      "screen brighter",
+      "make screen brighter",
+      "raise brightness"
+    ],
+    "tool": "hardware_control",
+    "args": {
+      "action": "brightness_up"
+    },
+    "success_count": 10,
+    "failure_count": 0,
+    "avg_latency_us": 1329952,
+    "source": "DEFAULT_REFLEX",
+    "last_executed": 1790285390.496901,
+    "confidence": 0.9016
+  },
+  {
+    "skill_id": "skill_brightness_down",
+    "name": "Decrease Screen Brightness",
+    "triggers": [
+      "decrease brightness",
+      "brightness down",
+      "lower brightness",
+      "screen dimmer",
+      "dim screen"
+    ],
+    "tool": "hardware_control",
+    "args": {
+      "action": "brightness_down"
+    },
+    "success_count": 1,
+    "failure_count": 0,
+    "avg_latency_us": 35.0,
+    "source": "DEFAULT_REFLEX"
+  },
+  {
+    "skill_id": "skill_read_clipboard",
+    "name": "Read / Speak Clipboard",
+    "triggers": [
+      "read clipboard",
+      "what is on my clipboard",
+      "speak clipboard",
+      "read my clipboard"
+    ],
+    "tool": "clipboard_ops",
+    "args": {
+      "action": "speak"
+    },
+    "success_count": 2,
+    "failure_count": 0,
+    "avg_latency_us": 246877.0,
+    "source": "DEFAULT_REFLEX",
+    "last_executed": 1790255143.784676
+  },
+  {
+    "skill_id": "skill_clear_clipboard",
+    "name": "Clear Windows Clipboard",
+    "triggers": [
+      "clear clipboard",
+      "empty clipboard",
+      "erase clipboard"
+    ],
+    "tool": "clipboard_ops",
+    "args": {
+      "action": "clear"
+    },
+    "success_count": 1,
+    "failure_count": 0,
+    "avg_latency_us": 15.0,
+    "source": "DEFAULT_REFLEX"
+  },
+  {
+    "skill_id": "skill_snap_left",
+    "name": "Snap Window Left",
+    "triggers": [
+      "snap left",
+      "snap window left",
+      "dock window left"
+    ],
+    "tool": "window_manager",
+    "args": {
+      "action": "snap_left"
+    },
+    "success_count": 4,
+    "failure_count": 0,
+    "avg_latency_us": 36297,
+    "source": "DEFAULT_REFLEX",
+    "last_executed": 1790291820.5134478,
+    "confidence": 0.9065
+  },
+  {
+    "skill_id": "skill_snap_right",
+    "name": "Snap Window Right",
+    "triggers": [
+      "snap right",
+      "snap window right",
+      "dock window right"
+    ],
+    "tool": "window_manager",
+    "args": {
+      "action": "snap_right"
+    },
+    "success_count": 1,
+    "failure_count": 0,
+    "avg_latency_us": 25.0,
+    "source": "DEFAULT_REFLEX"
+  },
+  {
+    "skill_id": "skill_maximize_window",
+    "name": "Maximize Active Window",
+    "triggers": [
+      "maximize window",
+      "maximize active window",
+      "full screen window"
+    ],
+    "tool": "window_manager",
+    "args": {
+      "action": "maximize"
+    },
+    "success_count": 1,
+    "failure_count": 0,
+    "avg_latency_us": 20.0,
+    "source": "DEFAULT_REFLEX"
+  },
+  {
+    "skill_id": "skill_switch_app",
+    "name": "Switch Active Application",
+    "triggers": [
+      "switch app",
+      "switch window",
+      "alt tab"
+    ],
+    "tool": "window_manager",
+    "args": {
+      "action": "switch_app"
+    },
+    "success_count": 1,
+    "failure_count": 0,
+    "avg_latency_us": 20.0,
+    "source": "DEFAULT_REFLEX"
+  },
+  {
+    "skill_id": "skill_desktop_next",
+    "name": "Next Virtual Desktop",
+    "triggers": [
+      "next desktop",
+      "next virtual desktop",
+      "switch to next desktop"
+    ],
+    "tool": "window_manager",
+    "args": {
+      "action": "desktop_next"
+    },
+    "success_count": 1,
+    "failure_count": 0,
+    "avg_latency_us": 20.0,
+    "source": "DEFAULT_REFLEX"
+  },
+  {
+    "skill_id": "skill_desktop_new",
+    "name": "Create New Virtual Desktop",
+    "triggers": [
+      "new desktop",
+      "create virtual desktop",
+      "new virtual desktop"
+    ],
+    "tool": "window_manager",
+    "args": {
+      "action": "desktop_new"
+    },
+    "success_count": 1,
+    "failure_count": 0,
+    "avg_latency_us": 20.0,
+    "source": "DEFAULT_REFLEX"
+  },
+  {
+    "skill_id": "skill_rlcd_1790280898",
+    "name": "Autonomous: clean temporary files",
+    "triggers": [
+      "clean temporary files"
+    ],
+    "tool": "filesystem_ops",
+    "args": {
+      "action": "clean_temp"
+    },
+    "success_count": 5,
+    "failure_count": 0,
+    "avg_latency_us": 40454,
+    "source": "RLCD_DYNAMIC_SYNTHESIS",
+    "created_at": 1790280898.881903,
+    "last_executed": 1790265712.9750614,
+    "confidence": 0.9161
+  },
+  {
+    "skill_id": "skill_rlcd_1790281010",
+    "name": "Autonomous: what window is currently open?",
+    "triggers": [
+      "what window is currently open?"
+    ],
+    "tool": "get_foreground_window",
+    "args": {},
+    "success_count": 3,
+    "failure_count": 0,
+    "avg_latency_us": 22,
+    "source": "RLCD_DYNAMIC_SYNTHESIS",
+    "created_at": 1790281010.2892094,
+    "last_executed": 1790281070.8360293,
+    "confidence": 0.9137
+  },
+  {
+    "skill_id": "skill_rlcd_1790281132",
+    "name": "Autonomous: read screen text with ocr",
+    "triggers": [
+      "read screen text with ocr"
+    ],
+    "tool": "screen_ocr",
+    "args": {},
+    "success_count": 1,
+    "failure_count": 0,
+    "avg_latency_us": 30.0,
+    "source": "RLCD_DYNAMIC_SYNTHESIS",
+    "created_at": 1790281132.1853075
+  },
+  {
+    "skill_id": "skill_rlcd_1790281269",
+    "name": "Autonomous: open YouTube long channel Red",
+    "triggers": [
+      "open youtube long channel red"
+    ],
+    "tool": "web_search",
+    "args": {
+      "query": "long channel red",
+      "launch_website": true,
+      "open_browser": true
+    },
+    "success_count": 1,
+    "failure_count": 0,
+    "avg_latency_us": 30.0,
+    "source": "RLCD_DYNAMIC_SYNTHESIS",
+    "created_at": 1790281269.1636636
+  },
+  {
+    "skill_id": "skill_rlcd_1790281370",
+    "name": "Autonomous: open sarkariresult.com",
+    "triggers": [
+      "open sarkariresult.com"
+    ],
+    "tool": "browser_open",
+    "args": {
+      "url": "https://sarkariresult.com"
+    },
+    "success_count": 1,
+    "failure_count": 0,
+    "avg_latency_us": 30.0,
+    "source": "RLCD_DYNAMIC_SYNTHESIS",
+    "created_at": 1790281370.471745
+  },
+  {
+    "skill_id": "skill_rlcd_1790285653",
+    "name": "Autonomous: open file explorer",
+    "triggers": [
+      "open file explorer",
+      "open explorer",
+      "launch explorer"
+    ],
+    "tool": "app_control",
+    "args": {
+      "action": "launch",
+      "target": "explorer"
+    },
+    "success_count": 1,
+    "failure_count": 0,
+    "avg_latency_us": 30.0,
+    "source": "RLCD_DYNAMIC_SYNTHESIS",
+    "created_at": 1790285653.1562798
+  },
+  {
+    "skill_id": "skill_rlcd_1790285692",
+    "name": "Autonomous: open terminal",
+    "triggers": [
+      "open terminal",
+      "launch terminal",
+      "start terminal",
+      "terminal",
+      "cmd exe",
+      "cmd exe fir terminal",
+      "open cmd",
+      "launch cmd",
+      "start cmd",
+      "cmd.exe",
+      "cmd"
+    ],
+    "tool": "app_control",
+    "args": {
+      "action": "launch",
+      "target": "terminal"
+    },
+    "success_count": 12,
+    "failure_count": 0,
+    "avg_latency_us": 131749,
+    "source": "RLCD_DYNAMIC_SYNTHESIS",
+    "created_at": 1790285692.4353316,
+    "last_executed": 1790286918.2245529,
+    "confidence": 0.9965
+  },
+  {
+    "skill_id": "skill_open_terminal",
+    "name": "Launch Windows Terminal / Command Prompt",
+    "triggers": [
+      "open terminal",
+      "launch terminal",
+      "start terminal",
+      "terminal",
+      "cmd exe",
+      "cmd exe fir terminal",
+      "open cmd exe"
+    ],
+    "tool": "app_control",
+    "args": {
+      "action": "launch",
+      "target": "terminal"
+    },
+    "success_count": 1,
+    "failure_count": 0,
+    "avg_latency_us": 25.0,
+    "source": "DEFAULT_REFLEX"
+  },
+  {
+    "skill_id": "skill_open_cmd",
+    "name": "Launch Command Prompt",
+    "triggers": [
+      "open cmd",
+      "launch cmd",
+      "start cmd",
+      "open command prompt",
+      "launch command prompt",
+      "cmd",
+      "cmd.exe"
+    ],
+    "tool": "app_control",
+    "args": {
+      "action": "launch",
+      "target": "cmd.exe"
+    },
+    "success_count": 1,
+    "failure_count": 0,
+    "avg_latency_us": 25.0,
+    "source": "DEFAULT_REFLEX"
+  },
+  {
+    "skill_id": "skill_open_powershell",
+    "name": "Launch PowerShell",
+    "triggers": [
+      "open powershell",
+      "launch powershell",
+      "start powershell",
+      "powershell",
+      "pwsh"
+    ],
+    "tool": "app_control",
+    "args": {
+      "action": "launch",
+      "target": "powershell.exe"
+    },
+    "success_count": 1,
+    "failure_count": 0,
+    "avg_latency_us": 25.0,
+    "source": "DEFAULT_REFLEX"
+  },
+  {
+    "skill_id": "skill_open_explorer",
+    "name": "Launch File Explorer",
+    "triggers": [
+      "open file explorer",
+      "open explorer",
+      "launch explorer",
+      "open files",
+      "open folder"
+    ],
+    "tool": "app_control",
+    "args": {
+      "action": "launch",
+      "target": "explorer.exe"
+    },
+    "success_count": 1,
+    "failure_count": 0,
+    "avg_latency_us": 25.0,
+    "source": "DEFAULT_REFLEX"
+  },
+  {
+    "skill_id": "skill_rlcd_1790265810",
+    "name": "Autonomous: boss key",
+    "triggers": [
+      "boss key"
+    ],
+    "tool": "lock",
+    "args": {},
+    "success_count": 2,
+    "failure_count": 0,
+    "avg_latency_us": 30.0,
+    "source": "RLCD_DYNAMIC_SYNTHESIS",
+    "created_at": 1790265810.2833962,
+    "last_executed": 1790265828.022033
+  }
+]

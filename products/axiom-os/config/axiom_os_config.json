@@ -1,0 +1,30 @@
+{
+  "system": {
+    "name": "Axiom-OS",
+    "version": "1.0.0",
+    "port": 3000,
+    "swarm_port": 3001,
+    "fast_path_enabled": true,
+    "shared_memory_ipc": true
+  },
+  "conformal_gate": {
+    "alpha": 0.01,
+    "delta": 0.001,
+    "strict_barrier_for_destructive_ops": true
+  },
+  "latent_deliberation": {
+    "lif_timesteps": 3,
+    "threshold": 0.5,
+    "leak_rate": 0.3
+  },
+  "visual_spatial": {
+    "resolution": 128,
+    "temperature": 0.05
+  },
+  "sentinels": {
+    "poll_interval_s": 5,
+    "cpu_threshold_pct": 90.0,
+    "ram_threshold_pct": 90.0,
+    "disk_threshold_pct": 90.0
+  }
+}

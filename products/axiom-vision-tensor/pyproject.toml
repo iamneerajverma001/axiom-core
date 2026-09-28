@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "axiom-vision-tensor"
+version = "1.0.0"
+description = "Sub-16ms Soft-Argmax Visual-Spatial Click Engine (Zero-OCR, Zero-Cloud)"
+readme = "README.md"
+authors = [{ name = "Axiom Engineering Team" }]
+license = { text = "Apache-2.0" }
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering :: Image Recognition",
+    "Operating System :: Microsoft :: Windows"
+]
+dependencies = [
+    "numpy>=1.22.0",
+    "pillow>=9.0.0"
+]
+
+[project.optional-dependencies]
+win32 = [
+    "pywin32>=305"
+]
+dev = [
+    "pytest>=8.0.0"
+]
+
+[project.scripts]
+axiom-vision = "axiom_vision.cli:main"
