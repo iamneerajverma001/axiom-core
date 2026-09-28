@@ -510,6 +510,37 @@ def run_autonomous_loop(
         "elapsed_ms": 0.0
     }
 
+    def _try_distill(step_num: int) -> Optional[dict]:
+        try:
+            try:
+                from src.omni_reflex import distill_skill_from_trace
+            except ImportError:
+                from omni_reflex import distill_skill_from_trace
+            d_skill = distill_skill_from_trace(user_goal, execution_trace)
+            if d_skill:
+                return {
+                    "type": "skill_distilled",
+                    "step": step_num,
+                    "thought": f"Distilled successful plan into bare-metal C++ reflex leaf '{d_skill.get('name', 'distilled_skill')}'",
+                    "skill": d_skill
+                }
+        except Exception:
+            pass
+        return None
+
+    def _conclude(step_num: int, thought_msg: str, final_ans_msg: str):
+        execution_trace["success"] = True
+        execution_trace["final_answer"] = final_ans_msg
+        execution_trace["elapsed_ms"] = round((time.time() - t_start) * 1000.0, 1)
+        d_evt = _try_distill(step_num)
+        return d_evt, {
+            "type": "completed",
+            "step": step_num,
+            "thought": thought_msg,
+            "final_answer": final_ans_msg,
+            "elapsed_ms": execution_trace["elapsed_ms"]
+        }
+
     step_count = 0
     while step_count < budget:
         step_count += 1
@@ -538,16 +569,10 @@ def run_autonomous_loop(
                     out = last_obs.get("stdout") or last_obs.get("message", "Executed successfully on Windows hardware.")
                     preview = out if len(out) <= 800 else out[:500] + f"\n... [{len(out) - 700} chars truncated] ...\n" + out[-200:]
                     final_ans = f"Successfully executed {last_step.get('action')} (exit code 0):\n{preview}"
-                    execution_trace["success"] = True
-                    execution_trace["final_answer"] = final_ans
-                    execution_trace["elapsed_ms"] = round((time.time() - t_start) * 1000.0, 1)
-                    yield {
-                        "type": "completed",
-                        "step": step_count,
-                        "thought": "Action executed successfully on desktop.",
-                        "final_answer": final_ans,
-                        "elapsed_ms": execution_trace["elapsed_ms"]
-                    }
+                    d_evt, comp_evt = _conclude(step_count, "Action executed successfully on desktop.", final_ans)
+                    if d_evt:
+                        yield d_evt
+                    yield comp_evt
                     return execution_trace
 
             err_msg = f"Inference error with provider '{provider}': {str(e)}"
@@ -591,16 +616,10 @@ def run_autonomous_loop(
                 }
                 continue
             else:
-                yield {
-                    "type": "completed",
-                    "step": step_count,
-                    "thought": thought,
-                    "final_answer": final_ans,
-                    "elapsed_ms": round((time.time() - t_start) * 1000.0, 1)
-                }
-                execution_trace["success"] = True
-                execution_trace["final_answer"] = final_ans
-                execution_trace["elapsed_ms"] = round((time.time() - t_start) * 1000.0, 1)
+                d_evt, comp_evt = _conclude(step_count, thought, final_ans)
+                if d_evt:
+                    yield d_evt
+                yield comp_evt
                 return execution_trace
 
         # ----------------------------------------------------------------------
@@ -739,16 +758,10 @@ def run_autonomous_loop(
                     if obs.get("saved_path"):
                         saved_msg += f" Saved to: {obs.get('saved_path')}"
                     final_ans = f"Camera Hardware Vision Complete: {saved_msg}"
-                    execution_trace["success"] = True
-                    execution_trace["final_answer"] = final_ans
-                    execution_trace["elapsed_ms"] = round((time.time() - t_start) * 1000.0, 1)
-                    yield {
-                        "type": "completed",
-                        "step": step_count,
-                        "thought": "Hardware webcam capture and vision detection verified on Windows desktop.",
-                        "final_answer": final_ans,
-                        "elapsed_ms": execution_trace["elapsed_ms"]
-                    }
+                    d_evt, comp_evt = _conclude(step_count, "Hardware webcam capture and vision detection verified on Windows desktop.", final_ans)
+                    if d_evt:
+                        yield d_evt
+                    yield comp_evt
                     return execution_trace
 
             # Direct Vision-Tensor Click Completion
@@ -758,16 +771,10 @@ def run_autonomous_loop(
                     if obs.get("ui_transition_verified"):
                         msg += " (Empirical UI state transition confirmed by luminance diff probe)."
                     final_ans = f"Direct Vision-Tensor Complete: {msg}"
-                    execution_trace["success"] = True
-                    execution_trace["final_answer"] = final_ans
-                    execution_trace["elapsed_ms"] = round((time.time() - t_start) * 1000.0, 1)
-                    yield {
-                        "type": "completed",
-                        "step": step_count,
-                        "thought": "Direct visual soft-argmax click and physical state transition certified.",
-                        "final_answer": final_ans,
-                        "elapsed_ms": execution_trace["elapsed_ms"]
-                    }
+                    d_evt, comp_evt = _conclude(step_count, "Direct visual soft-argmax click and physical state transition certified.", final_ans)
+                    if d_evt:
+                        yield d_evt
+                    yield comp_evt
                     return execution_trace
 
             # Hyper-Utility Completion: Code execution succeeded with exit code 0
@@ -779,16 +786,10 @@ def run_autonomous_loop(
                     preview = out if len(out) <= 800 else out[:500] + f"\n... [{len(out) - 700} chars truncated] ...\n" + out[-200:]
                     file_note = f" (saved to '{obs.get('file_saved')}')" if obs.get("file_saved") else ""
                     final_ans = f"Code executed successfully{file_note} with exit code 0:\n{preview}"
-                    execution_trace["success"] = True
-                    execution_trace["final_answer"] = final_ans
-                    execution_trace["elapsed_ms"] = round((time.time() - t_start) * 1000.0, 1)
-                    yield {
-                        "type": "completed",
-                        "step": step_count,
-                        "thought": f"Script {action} compiled/executed cleanly on Windows. Complete output verified.",
-                        "final_answer": final_ans,
-                        "elapsed_ms": execution_trace["elapsed_ms"]
-                    }
+                    d_evt, comp_evt = _conclude(step_count, f"Script {action} compiled/executed cleanly on Windows. Complete output verified.", final_ans)
+                    if d_evt:
+                        yield d_evt
+                    yield comp_evt
                     return execution_trace
 
             # Screen OCR Completion
@@ -803,32 +804,20 @@ def run_autonomous_loop(
                     else:
                         preview_text = " | ".join(lines[:8]) if lines else "No text detected on screen."
                         final_ans = f"Screen OCR Complete: Extracted {obs.get('line_count', len(lines))} lines from live desktop. Text: {preview_text}"
-                    execution_trace["success"] = True
-                    execution_trace["final_answer"] = final_ans
-                    execution_trace["elapsed_ms"] = round((time.time() - t_start) * 1000.0, 1)
-                    yield {
-                        "type": "completed",
-                        "step": step_count,
-                        "thought": "Live Win32 desktop OCR scanning verified.",
-                        "final_answer": final_ans,
-                        "elapsed_ms": execution_trace["elapsed_ms"]
-                    }
+                    d_evt, comp_evt = _conclude(step_count, "Live Win32 desktop OCR scanning verified.", final_ans)
+                    if d_evt:
+                        yield d_evt
+                    yield comp_evt
                     return execution_trace
 
             # Web Search Completion
             if action in ("web_search", "browser_open") and obs.get("success"):
                 if not rem_exec_pending:
                     final_ans = f"Physical Web & Desktop Navigation Complete: {obs.get('message', 'Dispatched to browser on desktop.')}"
-                    execution_trace["success"] = True
-                    execution_trace["final_answer"] = final_ans
-                    execution_trace["elapsed_ms"] = round((time.time() - t_start) * 1000.0, 1)
-                    yield {
-                        "type": "completed",
-                        "step": step_count,
-                        "thought": "Live browser navigation and physical display verified on user monitor.",
-                        "final_answer": final_ans,
-                        "elapsed_ms": execution_trace["elapsed_ms"]
-                    }
+                    d_evt, comp_evt = _conclude(step_count, "Live browser navigation and physical display verified on user monitor.", final_ans)
+                    if d_evt:
+                        yield d_evt
+                    yield comp_evt
                     return execution_trace
 
             # Feed sanitized observation back into conversation with Hierarchical Ledger steering

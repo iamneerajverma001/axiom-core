@@ -108,7 +108,7 @@ class TestVisionTensorEngine(unittest.TestCase):
         # Mock execute_direct_click to avoid moving mouse during automated test
         orig_click = self.engine.execute_direct_click
         try:
-            self.engine.execute_direct_click = lambda t, click=True, verify=False: {
+            self.engine.execute_direct_click = lambda t, click=True, verify=False, **kwargs: {
                 "phys_x": 500, "phys_y": 500, "confidence": 0.9, "total_elapsed_ms": 2.5
             }
             res = self.engine.execute_click_sequence(["button 7", "button 8"], delay_between_s=0.01)

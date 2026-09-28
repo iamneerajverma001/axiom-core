@@ -25,6 +25,115 @@ except Exception:
     kernel32 = None
     gdi32 = None
 
+def init_dpi_awareness():
+    """Activates Per-Monitor V2 DPI awareness so coordinates accurately map across high-DPI screens."""
+    if sys.platform == 'win32' and user32:
+        try:
+            # DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2 = -4
+            user32.SetProcessDpiAwarenessContext(ctypes.c_void_p(-4))
+        except Exception:
+            try:
+                user32.SetProcessDPIAware()
+            except Exception:
+                pass
+
+# Initialize immediately on module load
+init_dpi_awareness()
+
+class _RECT(ctypes.Structure):
+    _fields_ = [
+        ('left', wintypes.LONG if wintypes else ctypes.c_long),
+        ('top', wintypes.LONG if wintypes else ctypes.c_long),
+        ('right', wintypes.LONG if wintypes else ctypes.c_long),
+        ('bottom', wintypes.LONG if wintypes else ctypes.c_long)
+    ]
+
+class _MONITORINFOEX(ctypes.Structure):
+    _fields_ = [
+        ('cbSize', wintypes.DWORD if wintypes else ctypes.c_uint32),
+        ('rcMonitor', _RECT),
+        ('rcWork', _RECT),
+        ('dwFlags', wintypes.DWORD if wintypes else ctypes.c_uint32),
+        ('szDevice', ctypes.c_wchar * 32)
+    ]
+
+def get_monitors_info() -> List[Dict[str, Any]]:
+    """
+    Enumerates all active physical and virtual display monitors.
+    Returns list of dicts with device name, bounding rect, resolution, and is_primary flag.
+    """
+    monitors: List[Dict[str, Any]] = []
+    if sys.platform == 'win32' and user32:
+        try:
+            def _enum_proc(hMonitor, hdcMonitor, lprcMonitor, dwData):
+                mi = _MONITORINFOEX()
+                mi.cbSize = ctypes.sizeof(_MONITORINFOEX)
+                if user32.GetMonitorInfoW(hMonitor, ctypes.byref(mi)):
+                    l = int(mi.rcMonitor.left)
+                    t = int(mi.rcMonitor.top)
+                    r = int(mi.rcMonitor.right)
+                    b = int(mi.rcMonitor.bottom)
+                    is_prim = bool(mi.dwFlags & 1)
+                    monitors.append({
+                        "index": len(monitors),
+                        "device": str(mi.szDevice),
+                        "left": l,
+                        "top": t,
+                        "right": r,
+                        "bottom": b,
+                        "width": max(1, r - l),
+                        "height": max(1, b - t),
+                        "is_primary": is_prim
+                    })
+                return 1
+
+            _MONITORENUMPROC = ctypes.WINFUNCTYPE(
+                ctypes.c_int,
+                wintypes.HMONITOR if wintypes else ctypes.c_void_p,
+                wintypes.HDC if wintypes else ctypes.c_void_p,
+                ctypes.POINTER(_RECT),
+                wintypes.LPARAM if wintypes else ctypes.c_long
+            )
+            user32.EnumDisplayMonitors(None, None, _MONITORENUMPROC(_enum_proc), 0)
+        except Exception:
+            pass
+
+    if not monitors:
+        w = user32.GetSystemMetrics(0) if user32 else 1366
+        h = user32.GetSystemMetrics(1) if user32 else 768
+        monitors.append({
+            "index": 0,
+            "device": "\\\\.\\DISPLAY1",
+            "left": 0,
+            "top": 0,
+            "right": w,
+            "bottom": h,
+            "width": w,
+            "height": h,
+            "is_primary": True
+        })
+    return monitors
+
+def get_active_window_monitor_index() -> int:
+    """Returns monitor index containing the currently focused foreground window."""
+    if sys.platform == 'win32' and user32:
+        try:
+            import win32gui
+            hwnd = win32gui.GetForegroundWindow()
+            if hwnd:
+                hmon = user32.MonitorFromWindow(hwnd, 2) # MONITOR_DEFAULTTONEAREST
+                all_mons = get_monitors_info()
+                mi = _MONITORINFOEX()
+                mi.cbSize = ctypes.sizeof(_MONITORINFOEX)
+                if user32.GetMonitorInfoW(hmon, ctypes.byref(mi)):
+                    target_dev = str(mi.szDevice)
+                    for m in all_mons:
+                        if m["device"] == target_dev:
+                            return m["index"]
+        except Exception:
+            pass
+    return 0
+
 def _get_active_window_rect(screen_w: int, screen_h: int) -> Tuple[float, float, float, float]:
     """Returns normalized (left, top, right, bottom) of foreground window, fallback to full screen."""
     try:
@@ -42,20 +151,44 @@ def _get_active_window_rect(screen_w: int, screen_h: int) -> Tuple[float, float,
         pass
     return (0.0, 0.0, 1.0, 1.0)
 
-def capture_screen_fast(save_path: str = "") -> Tuple[Image.Image, int, int]:
+def capture_screen_fast(
+    save_path: str = "",
+    monitor_index: Optional[int] = None,
+    virtual_span: bool = False,
+    include_offset: bool = False
+) -> Any:
     """
     High-speed in-memory screen capture via Win32 GDI BitBlt.
-    Bypasses disk I/O when save_path is empty for sub-5ms screen acquisition.
+    Supports single primary monitor, specific monitor index, or complete multi-monitor virtual screen.
+    If include_offset=True, returns (image, width, height, offset_x, offset_y).
+    Otherwise returns (image, width, height) for 100% backward compatibility.
     """
     if sys.platform == 'win32' and user32 and gdi32:
         try:
-            w = user32.GetSystemMetrics(0)
-            h = user32.GetSystemMetrics(1)
+            if virtual_span:
+                # Capture entire multi-monitor virtual desktop
+                x = user32.GetSystemMetrics(76) # SM_XVIRTUALSCREEN
+                y = user32.GetSystemMetrics(77) # SM_YVIRTUALSCREEN
+                w = user32.GetSystemMetrics(78) # SM_CXVIRTUALSCREEN
+                h = user32.GetSystemMetrics(79) # SM_CYVIRTUALSCREEN
+            elif monitor_index is not None and monitor_index >= 0:
+                monitors = get_monitors_info()
+                target_mon = next((m for m in monitors if m["index"] == monitor_index), monitors[0])
+                x = target_mon["left"]
+                y = target_mon["top"]
+                w = target_mon["width"]
+                h = target_mon["height"]
+            else:
+                x = 0
+                y = 0
+                w = user32.GetSystemMetrics(0) # SM_CXSCREEN
+                h = user32.GetSystemMetrics(1) # SM_CYSCREEN
+
             hdc_screen = user32.GetDC(0)
             hdc_mem = gdi32.CreateCompatibleDC(hdc_screen)
             hbm = gdi32.CreateCompatibleBitmap(hdc_screen, w, h)
             gdi32.SelectObject(hdc_mem, hbm)
-            gdi32.BitBlt(hdc_mem, 0, 0, w, h, hdc_screen, 0, 0, 0x00CC0020)
+            gdi32.BitBlt(hdc_mem, 0, 0, w, h, hdc_screen, x, y, 0x00CC0020)
 
             class _BITMAPINFOHEADER(ctypes.Structure):
                 _fields_ = [
@@ -91,6 +224,8 @@ def capture_screen_fast(save_path: str = "") -> Tuple[Image.Image, int, int]:
             if save_path:
                 os.makedirs(os.path.dirname(os.path.abspath(save_path)), exist_ok=True)
                 img.save(save_path)
+            if include_offset:
+                return img, w, h, x, y
             return img, w, h
         except Exception:
             pass
@@ -103,10 +238,15 @@ def capture_screen_fast(save_path: str = "") -> Tuple[Image.Image, int, int]:
         if save_path:
             os.makedirs(os.path.dirname(os.path.abspath(save_path)), exist_ok=True)
             img.save(save_path)
+        if include_offset:
+            return img, w, h, 0, 0
         return img, w, h
     except Exception:
         fallback = Image.new("RGB", (1366, 768), color=(25, 25, 25))
+        if include_offset:
+            return fallback, 1366, 768, 0, 0
         return fallback, 1366, 768
+
 
 class VisualSpatialTensorEngine:
     """
@@ -488,29 +628,43 @@ class VisualSpatialTensorEngine:
         click: bool = True,
         button: str = "left",
         double_click: bool = False,
-        verify: bool = True
+        verify: bool = True,
+        monitor_index: Optional[int] = None,
+        virtual_span: bool = False
     ) -> Dict[str, Any]:
         """
         End-to-End Direct Hardware Actuation:
-        1. Captures live screen in memory (<5ms)
+        1. Captures live screen in memory (<5ms), optionally targeting specific monitor or multi-monitor virtual desktop
         2. Soft-argmax regression with high-res patch refinement
-        3. Moves cursor and fires physical Win32 mouse event
+        3. Moves cursor and fires physical Win32 mouse event with multi-monitor offset correction
         4. Validates post-click visual state transition
         Total latency: <25ms
         """
         t0 = time.perf_counter()
-        img_before, w, h = capture_screen_fast()
+        img_before, w, h, off_x, off_y = capture_screen_fast(
+            monitor_index=monitor_index,
+            virtual_span=virtual_span,
+            include_offset=True
+        )
         pred = self.predict_click_coordinates(img_before, target_description, screen_w=w, screen_h=h, refine_patch=True)
+
+        # Record monitor offset coordinates
+        pred["monitor_offset_x"] = off_x
+        pred["monitor_offset_y"] = off_y
+        pred["local_x"] = pred["phys_x"]
+        pred["local_y"] = pred["phys_y"]
+        pred["global_phys_x"] = pred["phys_x"] + off_x
+        pred["global_phys_y"] = pred["phys_y"] + off_y
 
         if not click or not pred.get("success"):
             pred["clicked"] = False
             return pred
 
-        px = pred["phys_x"]
-        py = pred["phys_y"]
+        gx = pred["global_phys_x"]
+        gy = pred["global_phys_y"]
 
         if sys.platform == 'win32' and user32:
-            user32.SetCursorPos(px, py)
+            user32.SetCursorPos(gx, gy)
             time.sleep(0.02)
             btn = button.lower().strip()
 
@@ -533,26 +687,43 @@ class VisualSpatialTensorEngine:
             # Visual State Transition Verification
             if verify:
                 time.sleep(0.04)
-                img_after, _, _ = capture_screen_fast()
-                v_res = self.verify_visual_state_transition(img_before, img_after, px, py)
+                img_after, _, _, _, _ = capture_screen_fast(
+                    monitor_index=monitor_index,
+                    virtual_span=virtual_span,
+                    include_offset=True
+                )
+                v_res = self.verify_visual_state_transition(img_before, img_after, pred["phys_x"], pred["phys_y"])
                 pred.update(v_res)
             else:
                 pred["ui_transition_verified"] = True
 
         pred["total_elapsed_ms"] = round((time.perf_counter() - t0) * 1000.0, 2)
-        pred["message"] = f"Direct Vision-Tensor clicked '{target_description}' at ({px}, {py}) in {pred['total_elapsed_ms']}ms."
+        pred["message"] = f"Direct Vision-Tensor clicked '{target_description}' at ({gx}, {gy}) in {pred['total_elapsed_ms']}ms."
         return pred
 
-    def execute_click_sequence(self, targets: List[str], delay_between_s: float = 0.15) -> Dict[str, Any]:
-        """Executes an ordered sequence of direct visual clicks across the screen."""
+    def execute_click_sequence(
+        self,
+        targets: List[str],
+        delay_between_s: float = 0.15,
+        monitor_index: Optional[int] = None,
+        virtual_span: bool = False
+    ) -> Dict[str, Any]:
+        """Executes an ordered sequence of direct visual clicks across the screen/monitors."""
         t0 = time.perf_counter()
         results = []
         for t in targets:
-            step_res = self.execute_direct_click(t, click=True, verify=False)
+            click_kwargs = {"click": True, "verify": False}
+            if monitor_index is not None:
+                click_kwargs["monitor_index"] = monitor_index
+            if virtual_span:
+                click_kwargs["virtual_span"] = virtual_span
+            step_res = self.execute_direct_click(t, **click_kwargs)
             results.append({
                 "target": t,
                 "phys_x": step_res.get("phys_x"),
                 "phys_y": step_res.get("phys_y"),
+                "global_x": step_res.get("global_phys_x"),
+                "global_y": step_res.get("global_phys_y"),
                 "confidence": step_res.get("confidence"),
                 "elapsed_ms": step_res.get("total_elapsed_ms")
             })
@@ -564,8 +735,9 @@ class VisualSpatialTensorEngine:
             "total_clicks": len(results),
             "sequence": results,
             "total_elapsed_ms": total_ms,
-            "message": f"Executed sequence of {len(results)} visual clicks in {total_ms}ms."
+            "message": f"Executed sequence of {len(results)} visual clicks across monitors in {total_ms}ms."
         }
+
 
 # Global Singleton
 vision_tensor_engine = VisualSpatialTensorEngine()

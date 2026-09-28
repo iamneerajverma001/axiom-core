@@ -397,30 +397,42 @@ class VisualSpatialTensorEngine:
         click: bool = True,
         button: str = "left",
         double_click: bool = False,
-        verify: bool = True
+        verify: bool = True,
+        monitor_index: Optional[int] = None,
+        virtual_span: bool = False
     ) -> Dict[str, Any]:
         """
         End-to-End Direct Hardware Actuation:
-        1. Captures live screen in memory (<5ms)
+        1. Captures live screen in memory (<5ms), optionally targeting specific monitor or multi-monitor virtual desktop
         2. Soft-argmax regression with high-res patch refinement
-        3. Moves cursor and fires physical Win32 mouse event
+        3. Moves cursor and fires physical Win32 mouse event with multi-monitor offset correction
         4. Validates post-click visual state transition
         Total latency: <25ms
         """
         t0 = time.perf_counter()
-        img_before = capture_screen_gdi()
-        w, h = img_before.size
+        img_before, w, h, off_x, off_y = capture_screen_gdi(
+            monitor_index=monitor_index,
+            virtual_span=virtual_span,
+            include_offset=True
+        )
         pred = self.predict_click_coordinates(img_before, target_description, screen_w=w, screen_h=h, refine_patch=True)
+
+        pred["monitor_offset_x"] = off_x
+        pred["monitor_offset_y"] = off_y
+        pred["local_x"] = pred["phys_x"]
+        pred["local_y"] = pred["phys_y"]
+        pred["global_phys_x"] = pred["phys_x"] + off_x
+        pred["global_phys_y"] = pred["phys_y"] + off_y
 
         if not click or not pred.get("success"):
             pred["clicked"] = False
             return pred
 
-        px = pred["phys_x"]
-        py = pred["phys_y"]
+        gx = pred["global_phys_x"]
+        gy = pred["global_phys_y"]
 
         if sys.platform == 'win32' and user32:
-            user32.SetCursorPos(px, py)
+            user32.SetCursorPos(gx, gy)
             time.sleep(0.02)
             btn = button.lower().strip()
 
@@ -442,26 +454,43 @@ class VisualSpatialTensorEngine:
 
             if verify:
                 time.sleep(0.04)
-                img_after = capture_screen_gdi()
-                v_res = self.verify_visual_state_transition(img_before, img_after, px, py)
+                img_after, _, _, _, _ = capture_screen_gdi(
+                    monitor_index=monitor_index,
+                    virtual_span=virtual_span,
+                    include_offset=True
+                )
+                v_res = self.verify_visual_state_transition(img_before, img_after, pred["phys_x"], pred["phys_y"])
                 pred.update(v_res)
             else:
                 pred["ui_transition_verified"] = True
 
         pred["total_elapsed_ms"] = round((time.perf_counter() - t0) * 1000.0, 2)
-        pred["message"] = f"Direct Vision-Tensor clicked '{target_description}' at ({px}, {py}) in {pred['total_elapsed_ms']}ms."
+        pred["message"] = f"Direct Vision-Tensor clicked '{target_description}' at ({gx}, {gy}) in {pred['total_elapsed_ms']}ms."
         return pred
 
-    def execute_click_sequence(self, targets: List[str], delay_between_s: float = 0.15) -> Dict[str, Any]:
-        """Executes an ordered sequence of direct visual clicks across the screen."""
+    def execute_click_sequence(
+        self,
+        targets: List[str],
+        delay_between_s: float = 0.15,
+        monitor_index: Optional[int] = None,
+        virtual_span: bool = False
+    ) -> Dict[str, Any]:
+        """Executes an ordered sequence of direct visual clicks across the screen/monitors."""
         t0 = time.perf_counter()
         results = []
         for t in targets:
-            step_res = self.execute_direct_click(t, click=True, verify=False)
+            click_kwargs = {"click": True, "verify": False}
+            if monitor_index is not None:
+                click_kwargs["monitor_index"] = monitor_index
+            if virtual_span:
+                click_kwargs["virtual_span"] = virtual_span
+            step_res = self.execute_direct_click(t, **click_kwargs)
             results.append({
                 "target": t,
                 "phys_x": step_res.get("phys_x"),
                 "phys_y": step_res.get("phys_y"),
+                "global_x": step_res.get("global_phys_x"),
+                "global_y": step_res.get("global_phys_y"),
                 "confidence": step_res.get("confidence"),
                 "elapsed_ms": step_res.get("total_elapsed_ms")
             })
@@ -473,12 +502,13 @@ class VisualSpatialTensorEngine:
             "total_clicks": len(results),
             "sequence": results,
             "total_elapsed_ms": total_ms,
-            "message": f"Executed sequence of {len(results)} visual clicks in {total_ms}ms."
+            "message": f"Executed sequence of {len(results)} visual clicks across monitors in {total_ms}ms."
         }
 
-    def click_target(self, target_description: str, dry_run: bool = False) -> Dict[str, Any]:
+    def click_target(self, target_description: str, dry_run: bool = False, monitor_index: Optional[int] = None) -> Dict[str, Any]:
         """Compatibility wrapper for standalone callers."""
-        return self.execute_direct_click(target_description, click=(not dry_run), verify=True)
+        return self.execute_direct_click(target_description, click=(not dry_run), verify=True, monitor_index=monitor_index)
+
 
 # Global Singletons
 vision_tensor_engine = VisualSpatialTensorEngine()

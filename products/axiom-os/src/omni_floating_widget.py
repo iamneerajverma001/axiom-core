@@ -838,7 +838,8 @@ class AxiomCommandDeck(QWidget):
 
         self.obs_box = QLabel("Axiom Physical Engine online. All Win32 actuators calibrated.", self)
         self.obs_box.setWordWrap(True)
-        self.obs_box.setFixedHeight(68)
+        self.obs_box.setMinimumHeight(68)
+        self.obs_box.setMaximumHeight(96)
         self.obs_box.setStyleSheet("""
             QLabel {
                 background-color: rgba(7, 11, 20, 0.9);
@@ -954,18 +955,36 @@ class AxiomCommandDeck(QWidget):
         latency = res.get("latency_ms", 0)
         final_msg = res.get("final_answer") or res.get("message") or ""
         
-        # Check trace observations
+        # Check trace observations and visual state diffs
         trace = res.get("trace", [])
+        diff_info = ""
         if trace and isinstance(trace, list) and len(trace) > 0:
             last_step = trace[-1]
             obs = last_step.get("observation", {})
-            if isinstance(obs, dict) and obs.get("message"):
-                final_msg = obs.get("message")
+            if isinstance(obs, dict):
+                if obs.get("message"):
+                    final_msg = obs.get("message")
+                if obs.get("visual_state_diff"):
+                    vsd = obs["visual_state_diff"]
+                    diff_info = f" [ΔLum: {vsd.get('luminance_delta',0)*100:.1f}%, Pix: {vsd.get('changed_pixel_ratio',0)*100:.1f}%]"
 
         if not final_msg and res.get("success"):
             final_msg = f"Directive executed successfully via {mode}."
 
-        self.obs_box.setText(f"[{mode} | {latency}ms]\n{final_msg}")
+        ledger_info = ""
+        events = res.get("events", [])
+        plan_evt = next((e for e in events if e.get("type") in ("plan_initialized", "hierarchical_plan")), None)
+        if plan_evt and plan_evt.get("plan", {}).get("milestones"):
+            ms = plan_evt["plan"]["milestones"]
+            done_cnt = sum(1 for m in ms if m.get("status") in ("verified", "completed"))
+            ledger_info = f" | Ledger: {done_cnt}/{len(ms)} ✓"
+
+        dist_info = ""
+        if res.get("distilled_skill"):
+            d = res["distilled_skill"]
+            dist_info = f"\n⚡ Distilled C++ Reflex: {d.get('name', 'skill')} (<{d.get('avg_latency_us', 30):.0f}µs)"
+
+        self.obs_box.setText(f"[{mode} | {latency}ms]{ledger_info}{diff_info}\n{final_msg}{dist_info}")
 
         # TTS Speak Aloud Feedback
         if self.tts_enabled and final_msg:

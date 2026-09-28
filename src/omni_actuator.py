@@ -1945,18 +1945,37 @@ def execute_tool(tool_name: str, **kwargs) -> dict:
     elif t_clean in ("system_theme_control", "theme", "dark_mode", "light_mode"):
         return system_theme_control(kwargs.get("action", "toggle"))
     elif t_clean in ("visual_spatial_click", "visual_click", "screen_click", "vision_click", "spatial_click"):
+        mon_idx = kwargs.get("monitor_index", kwargs.get("monitor", None))
+        if mon_idx is not None:
+            try:
+                mon_idx = int(mon_idx)
+            except Exception:
+                mon_idx = None
         return visual_spatial_click(
             target=kwargs.get("target", kwargs.get("query", kwargs.get("element", "center"))),
             click=bool(kwargs.get("click", True)),
             button=kwargs.get("button", "left"),
             verify=bool(kwargs.get("verify", True)),
-            refine_patch=bool(kwargs.get("refine_patch", True))
+            refine_patch=bool(kwargs.get("refine_patch", True)),
+            monitor_index=mon_idx,
+            virtual_span=bool(kwargs.get("virtual_span", False))
         )
     elif t_clean in ("visual_click_sequence", "click_sequence", "vision_sequence"):
         raw_targets = kwargs.get("targets", kwargs.get("elements", []))
         if isinstance(raw_targets, str):
             raw_targets = [t.strip() for t in raw_targets.split(",") if t.strip()]
-        return visual_click_sequence(targets=raw_targets, delay_between_s=float(kwargs.get("delay_between_s", 0.15)))
+        mon_idx = kwargs.get("monitor_index", kwargs.get("monitor", None))
+        if mon_idx is not None:
+            try:
+                mon_idx = int(mon_idx)
+            except Exception:
+                mon_idx = None
+        return visual_click_sequence(
+            targets=raw_targets,
+            delay_between_s=float(kwargs.get("delay_between_s", 0.15)),
+            monitor_index=mon_idx,
+            virtual_span=bool(kwargs.get("virtual_span", False))
+        )
     else:
         return {"success": False, "error": f"Unknown tool: '{tool_name}'"}
 
@@ -1965,11 +1984,14 @@ def visual_spatial_click(
     click: bool = True,
     button: str = "left",
     verify: bool = True,
-    refine_patch: bool = True
+    refine_patch: bool = True,
+    monitor_index: Optional[int] = None,
+    virtual_span: bool = False
 ) -> dict:
     """
     Multimodal visual click using multi-scale luminance tensor,
     two-stage patch refinement soft-argmax regression, and empirical visual transition verification.
+    Supports multi-monitor setups and full virtual desktop spans.
     """
     try:
         try:
@@ -1983,7 +2005,9 @@ def visual_spatial_click(
                 click=True,
                 button=button,
                 double_click=(button.lower() == "double"),
-                verify=verify
+                verify=verify,
+                monitor_index=monitor_index,
+                virtual_span=virtual_span
             )
         else:
             img, abs_path, w, h = capture_screen_pixels()
@@ -1995,16 +2019,27 @@ def visual_spatial_click(
     except Exception as e:
         return {"success": False, "error": str(e)}
 
-def visual_click_sequence(targets: list, delay_between_s: float = 0.15) -> dict:
-    """Executes an ordered sequence of direct visual clicks across the screen."""
+def visual_click_sequence(
+    targets: list,
+    delay_between_s: float = 0.15,
+    monitor_index: Optional[int] = None,
+    virtual_span: bool = False
+) -> dict:
+    """Executes an ordered sequence of direct visual clicks across the screen or monitors."""
     try:
         try:
             from omni_vision_tensor import vision_tensor_engine
         except ImportError:
             from src.omni_vision_tensor import vision_tensor_engine
-        return vision_tensor_engine.execute_click_sequence(targets, delay_between_s=delay_between_s)
+        return vision_tensor_engine.execute_click_sequence(
+            targets,
+            delay_between_s=delay_between_s,
+            monitor_index=monitor_index,
+            virtual_span=virtual_span
+        )
     except Exception as e:
         return {"success": False, "error": str(e)}
+
 
 if __name__ == "__main__":
     print("Testing PowerShell tool:")

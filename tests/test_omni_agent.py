@@ -489,7 +489,97 @@ class TestAxiomUnifiedArchitecture(unittest.TestCase):
         self.assertTrue(v_res["ui_transition_verified"])
         self.assertGreater(v_res["local_pixel_diff"], 0.4)
 
+    def test_multi_monitor_enumeration_and_dpi(self):
+        """Verifies multi-monitor display enumeration, DPI awareness, and offset capture."""
+        from src.omni_vision_tensor import (
+            get_monitors_info,
+            init_dpi_awareness,
+            capture_screen_fast,
+            get_active_window_monitor_index
+        )
+        init_dpi_awareness()
+        monitors = get_monitors_info()
+        self.assertIsInstance(monitors, list)
+        self.assertGreaterEqual(len(monitors), 1)
+        primary = monitors[0]
+        self.assertIn("left", primary)
+        self.assertIn("top", primary)
+        self.assertIn("width", primary)
+        self.assertIn("height", primary)
+
+        # Test offset capture
+        img, w, h, off_x, off_y = capture_screen_fast(monitor_index=0, include_offset=True)
+        self.assertIsNotNone(img)
+        self.assertGreater(w, 0)
+        self.assertGreater(h, 0)
+        self.assertEqual(off_x, primary["left"])
+        self.assertEqual(off_y, primary["top"])
+
+    def test_distilled_reflex_cpp_export(self):
+        """Verifies auto-generation of zero-copy C++ reflex lookup table header."""
+        from src.omni_reflex import export_distilled_skills_to_cpp
+        import tempfile
+
+        with tempfile.NamedTemporaryFile(suffix=".hpp", delete=False) as tf:
+            temp_path = tf.name
+
+        try:
+            out_path = export_distilled_skills_to_cpp(output_path=temp_path)
+            self.assertTrue(os.path.exists(temp_path))
+            with open(temp_path, "r", encoding="utf-8") as f:
+                content = f.read()
+
+            self.assertIn("#pragma once", content)
+            self.assertIn("namespace axiom {", content)
+            self.assertIn("struct DistilledReflexLeaf {", content)
+            self.assertIn("DISTILLED_REFLEX_LEAVES", content)
+            self.assertIn("lookup_distilled_reflex(const char* query)", content)
+        finally:
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
+
+    def test_distill_skill_from_autonomous_trace(self):
+        """Verifies auto-distillation of successful single-step and multi-step compound traces into learned skills and C++ header."""
+        from src.omni_reflex import distill_skill_from_trace, load_skills
+        
+        # 1. Single-step goal distillation
+        goal = "check system date via powershell"
+        trace = {
+            "success": True,
+            "steps": [
+                {
+                    "step": 1,
+                    "action": "powershell_exec",
+                    "args": {"script": "Get-Date"},
+                    "observation": {"success": True, "exit_code": 0}
+                }
+            ]
+        }
+        distilled = distill_skill_from_trace(goal, trace)
+        self.assertIsNotNone(distilled)
+        self.assertEqual(distilled.get("tool"), "powershell_exec")
+        self.assertIn("triggers", distilled)
+
+        # 2. Compound multi-step goal distillation
+        compound_goal = "launch notepad and take a screenshot"
+        compound_trace = {
+            "success": True,
+            "steps": [
+                {"action": "app_control", "args": {"action": "launch", "target": "notepad"}},
+                {"action": "system_control", "args": {"action": "screenshot"}}
+            ]
+        }
+        distilled_compound = distill_skill_from_trace(compound_goal, compound_trace)
+        self.assertIsNotNone(distilled_compound)
+        self.assertEqual(distilled_compound.get("tool"), "multi_step")
+        self.assertEqual(len(distilled_compound.get("steps", [])), 2)
+        
+        # Verify C++ header was generated and updated
+        cpp_header = os.path.join(PROJECT_ROOT, "include", "axiom", "distilled_reflex_leaves.hpp")
+        self.assertTrue(os.path.exists(cpp_header))
+
 
 if __name__ == "__main__":
     unittest.main()
+
 

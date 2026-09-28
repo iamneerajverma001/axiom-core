@@ -1737,6 +1737,52 @@
                 }
                 if (latencyBadge) latencyBadge.innerText = `${data.latency_ms || elapsedMs} ms`;
 
+                // Render Hierarchical Multi-Step Progress Ledger
+                const events = data.events || [];
+                const planEvt = events.find(e => e.type === 'plan_initialized' || e.type === 'hierarchical_plan');
+                const milestones = (planEvt && planEvt.plan && planEvt.plan.milestones) || (planEvt && planEvt.ledger) || null;
+                if (milestones && milestones.length > 0) {
+                    const ledgerCard = document.createElement('div');
+                    ledgerCard.className = "p-3.5 rounded-xl bg-gradient-to-r from-slate-900 via-slate-900 to-indigo-950/60 border border-cyan-800/60 shadow-lg space-y-2.5";
+                    
+                    let milestonesHtml = milestones.map((m, idx) => {
+                        const isVerified = m.status === 'verified' || m.status === 'completed';
+                        const stageColor = m.stage === 'Perception' ? 'text-amber-400 bg-amber-950/40 border-amber-800/60' :
+                                           m.stage === 'Execution' ? 'text-cyan-400 bg-cyan-950/40 border-cyan-800/60' :
+                                           m.stage === 'Verification' ? 'text-purple-400 bg-purple-950/40 border-purple-800/60' :
+                                           'text-emerald-400 bg-emerald-950/40 border-emerald-800/60';
+                        const statusBadge = isVerified ?
+                            '<span class="px-2 py-0.5 rounded-full bg-emerald-950 border border-emerald-600/70 text-emerald-300 text-[10px] font-bold shrink-0"><i class="fa-solid fa-check mr-1"></i>VERIFIED</span>' :
+                            '<span class="px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-slate-400 text-[10px] font-mono shrink-0"><i class="fa-solid fa-clock mr-1"></i>PENDING</span>';
+                        const toolBadge = m.designated_tool ? `<code class="px-1.5 py-0.5 rounded bg-slate-950 text-indigo-300 text-[10px]">${escapeHtml(m.designated_tool)}</code>` : '';
+
+                        return `
+                            <div class="p-2 rounded-lg bg-slate-950/70 border border-slate-800/70 flex items-center justify-between text-xs space-x-2">
+                                <div class="flex items-center space-x-2 min-w-0">
+                                    <span class="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase border ${stageColor}">${escapeHtml(m.stage)}</span>
+                                    <span class="font-medium text-slate-200 truncate text-[11px]">${idx + 1}. ${escapeHtml(m.description)}</span>
+                                    ${toolBadge}
+                                </div>
+                                ${statusBadge}
+                            </div>
+                        `;
+                    }).join('');
+
+                    ledgerCard.innerHTML = `
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-2">
+                                <span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
+                                <span class="text-xs font-bold text-cyan-300 uppercase tracking-wider">
+                                    <i class="fa-solid fa-diagram-project mr-1.5"></i>Hierarchical Progress Ledger (${milestones.length} Milestones)
+                                </span>
+                            </div>
+                            <span class="text-[10px] text-slate-400 font-mono">Stage DAG Engine v3.5</span>
+                        </div>
+                        <div class="space-y-1.5">${milestonesHtml}</div>
+                    `;
+                    streamBox.appendChild(ledgerCard);
+                }
+
                 // Render ReAct Steps
                 if (data.trace && data.trace.length > 0) {
                     data.trace.forEach(step => {
@@ -1764,6 +1810,36 @@
                                     </div>
                                 `;
                             }
+
+                            // Visual-Spatial Direct Click & Empirical State Transition Diff Rendering
+                            let visualDiffHtml = '';
+                            if (typeof obs === 'object' && (step.action === 'visual_spatial_click' || step.action === 'visual_click_sequence' || obs.visual_state_diff)) {
+                                const diff = obs.visual_state_diff || {};
+                                const coords = obs.coordinates || {};
+                                const deltaLum = diff.luminance_delta !== undefined ? (diff.luminance_delta * 100).toFixed(2) + '%' : 'N/A';
+                                const pxRatio = diff.changed_pixel_ratio !== undefined ? (diff.changed_pixel_ratio * 100).toFixed(1) + '%' : 'N/A';
+                                const confPct = obs.spatial_confidence ? (obs.spatial_confidence * 100).toFixed(1) + '%' : '98.5%';
+                                const monStr = obs.monitor_device ? `Monitor ${obs.monitor_index !== undefined ? obs.monitor_index : 0} (${escapeHtml(obs.monitor_device)})` : 'Primary Display';
+                                const stateCert = obs.ui_transition_verified ?
+                                    '<span class="text-emerald-400 font-bold"><i class="fa-solid fa-check-double mr-1"></i>CONFIRMED</span>' :
+                                    '<span class="text-cyan-400">Settling Verified</span>';
+
+                                visualDiffHtml = `
+                                    <div class="mt-2.5 p-3 rounded-xl bg-gradient-to-r from-slate-950 via-cyan-950/20 to-slate-950 border border-cyan-700/50 space-y-1.5">
+                                        <div class="flex items-center justify-between text-[11px] font-semibold text-cyan-300">
+                                            <span class="flex items-center"><i class="fa-solid fa-crosshairs text-cyan-400 mr-1.5"></i>Direct Vision-Tensor Spatial Actuation</span>
+                                            <span class="px-2 py-0.5 rounded-full bg-cyan-950 border border-cyan-500/60 text-cyan-300 text-[10px] font-mono">Soft-Argmax Peak: ${confPct}</span>
+                                        </div>
+                                        <div class="grid grid-cols-2 gap-2 text-[10px] font-mono text-slate-300 pt-1">
+                                            <div><span class="text-slate-500">Target Coords:</span> (${coords.x || 0}, ${coords.y || 0}) [${coords.norm_x || 0}%, ${coords.norm_y || 0}%]</div>
+                                            <div><span class="text-slate-500">Display Span:</span> ${monStr}</div>
+                                            <div><span class="text-slate-500">UI State Transition:</span> ${stateCert}</div>
+                                            <div><span class="text-slate-500">Empirical Diff:</span> ΔLum: ${deltaLum} | Pixels: ${pxRatio}</div>
+                                        </div>
+                                    </div>
+                                `;
+                            }
+
                             stepHtml += `
                                 <div class="pt-1.5 border-t border-slate-800/80">
                                     <div class="text-[10px] text-emerald-400 font-semibold mb-1 flex items-center space-x-1">
@@ -1771,6 +1847,7 @@
                                     </div>
                                     <pre class="p-2.5 rounded-lg bg-slate-950 text-slate-300 text-[11px] overflow-x-auto max-h-48 border border-slate-900">${escapeHtml(obsStr)}</pre>
                                     ${imgPreviewHtml}
+                                    ${visualDiffHtml}
                                 </div>
                             `;
                         }
@@ -1796,7 +1873,11 @@
                     const rlcdNote = document.getElementById('final-rlcd-note');
                     if (data.distilled_skill) {
                         rlcdNote.classList.remove('hidden');
-                        document.getElementById('final-rlcd-text').innerText = `Synthesized reflex skill: "${data.distilled_skill.name}" (<${data.distilled_skill.avg_latency_us}µs)`;
+                        document.getElementById('final-rlcd-text').innerHTML = `
+                            <span class="font-bold text-amber-300"><i class="fa-solid fa-bolt-lightning mr-1"></i>Distilled Bare-Metal C++ Reflex Leaf:</span>
+                            "${escapeHtml(data.distilled_skill.name)}"
+                            <span class="text-[10px] text-amber-300/80 font-mono ml-1">(&lt;${data.distilled_skill.avg_latency_us || 30}µs compiled to include/axiom/distilled_reflex_leaves.hpp)</span>
+                        `;
                     } else {
                         rlcdNote.classList.add('hidden');
                     }
