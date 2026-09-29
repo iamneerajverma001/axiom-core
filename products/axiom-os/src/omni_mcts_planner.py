@@ -45,11 +45,21 @@ class SpeculativeMctsPlanner:
         self.martingale_threshold = 1.0 / self.alpha  # 100.0
 
     def evaluate_action_risk(self, tool_name: str, args: dict) -> float:
-        """Calculates non-conformity risk score for an action candidate."""
+        """Calculates non-conformity risk score for an action candidate using Axiom Core Conformal Gate."""
         tool = (tool_name or "").lower()
         arg_str = str(args or "").lower()
 
-        # High-risk / Destructive
+        # 1. Consult Axiom Core Conformal Safety Gate if available
+        try:
+            from axiom_core import ConformalSafetyGate
+            gate = ConformalSafetyGate(alpha=self.alpha)
+            gate_eval = gate.evaluate_action_risk(f"{tool} {arg_str}")
+            if not gate_eval.get("permitted", True) or gate_eval.get("requires_human_barrier", False):
+                return max(0.95, float(gate_eval.get("risk_score", 0.95)))
+        except Exception:
+            pass
+
+        # 2. High-risk / Destructive fallback
         if any(k in arg_str for k in ["rmdir", "del /f", "format", "drop table", "shutdown", "taskkill /f /im explorer"]):
             return 0.95
         if tool in ("powershell_exec", "terminal_exec") and ("remove-item" in arg_str or "stop-process" in arg_str):

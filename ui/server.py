@@ -24,10 +24,13 @@ PORT = 3000
 UI_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(UI_DIR)
 SRC_DIR = os.path.join(PROJECT_ROOT, "src")
+CORE_DIR = os.path.join(PROJECT_ROOT, "products", "axiom-core")
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 if SRC_DIR not in sys.path:
     sys.path.insert(0, SRC_DIR)
+if CORE_DIR not in sys.path:
+    sys.path.insert(0, CORE_DIR)
 
 from src import axiom_os_bridge as bridge
 from src import omni_sensor
@@ -42,6 +45,12 @@ from src.omni_policy_optimizer import policy_optimizer
 from src.omni_mesh_swarm import mesh_node
 from src.axiom_ipc_bridge import ipc_bridge
 from src.omni_catalog import app_catalog
+
+try:
+    from axiom_core import AxiomClient, TypedQuestion
+    core_engine_client = AxiomClient()
+except Exception:
+    core_engine_client = None
 
 CLI_EXE = os.path.join(PROJECT_ROOT, "axiom_cli.exe")
 OLLAMA_BASE = "http://127.0.0.1:11434"
@@ -1170,6 +1179,83 @@ class AxiomUniversalHandler(http.server.SimpleHTTPRequestHandler):
                     result_data["cloud_error"] = str(cloud_err)
 
             self._send_json(result_data)
+            return
+
+        # ---------------------------------------------------------
+        # TYPED ENGINE ENDPOINTS: /api/typed/*
+        # ---------------------------------------------------------
+        elif req_path == '/api/typed/ask_choice':
+            if not core_engine_client:
+                self._send_json({"error": "Axiom Core engine client not initialized"}, 500)
+                return
+            try:
+                body = json.loads(raw_body) if raw_body else {}
+                state = body.get('state', '')
+                choices = body.get('choices', [])
+                question = body.get('question', '')
+                res = core_engine_client.ask_choice(state, choices, question)
+                self._send_json(res.to_dict())
+            except Exception as e:
+                self._send_json({"error": str(e)}, 400)
+            return
+
+        elif req_path == '/api/typed/ask_boolean':
+            if not core_engine_client:
+                self._send_json({"error": "Axiom Core engine client not initialized"}, 500)
+                return
+            try:
+                body = json.loads(raw_body) if raw_body else {}
+                state = body.get('state', '')
+                predicate = body.get('predicate', '')
+                res = core_engine_client.ask_boolean(state, predicate)
+                self._send_json(res.to_dict())
+            except Exception as e:
+                self._send_json({"error": str(e)}, 400)
+            return
+
+        elif req_path == '/api/typed/score':
+            if not core_engine_client:
+                self._send_json({"error": "Axiom Core engine client not initialized"}, 500)
+                return
+            try:
+                body = json.loads(raw_body) if raw_body else {}
+                state = body.get('state', '')
+                rubric = body.get('rubric', 'Quality')
+                min_val = float(body.get('min_val', 0.0))
+                max_val = float(body.get('max_val', 10.0))
+                res = core_engine_client.score(state, rubric, min_val, max_val)
+                self._send_json(res.to_dict())
+            except Exception as e:
+                self._send_json({"error": str(e)}, 400)
+            return
+
+        elif req_path == '/api/typed/batch_decide':
+            if not core_engine_client:
+                self._send_json({"error": "Axiom Core engine client not initialized"}, 500)
+                return
+            try:
+                body = json.loads(raw_body) if raw_body else {}
+                state = body.get('state', '')
+                raw_qs = body.get('questions', [])
+                qs = []
+                for q in raw_qs:
+                    if isinstance(q, dict):
+                        qs.append(TypedQuestion(
+                            type=q.get('type', 'choice'),
+                            question=q.get('question', ''),
+                            choices=q.get('choices') or q.get('options') or [],
+                            rubric=q.get('rubric', ''),
+                            min_val=float(q.get('min_val', 0.0)),
+                            max_val=float(q.get('max_val', 10.0)),
+                            name=q.get('name', '')
+                        ))
+                batch_res = core_engine_client.batch_decide(state, qs)
+                out = {}
+                for k, v in batch_res.items():
+                    out[k] = v.to_dict() if hasattr(v, 'to_dict') else v
+                self._send_json({"success": True, "results": out})
+            except Exception as e:
+                self._send_json({"error": str(e)}, 400)
             return
 
         # ---------------------------------------------------------

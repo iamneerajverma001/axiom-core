@@ -96,6 +96,15 @@ class TestAxiomOSArchitecture(unittest.TestCase):
         ledger = plan.render_ledger()
         self.assertIn("[HIERARCHICAL MULTI-STEP EXECUTION GRAPH & PROGRESS LEDGER]", ledger)
 
+    def test_axiom_os_binary_feature_tensor_ipc(self):
+        """Validates that Axiom-OS IPC buffer structure matches C++ engine 128-dim binary float tensor layout."""
+        from src.axiom_ipc_bridge import AxiomIpcBufferStruct
+        buf = AxiomIpcBufferStruct()
+        self.assertTrue(hasattr(buf, "feature_dim"))
+        self.assertTrue(hasattr(buf, "feature_vector"))
+        self.assertEqual(len(buf.feature_vector), 128)
+
 if __name__ == "__main__":
     unittest.main()
+
 
