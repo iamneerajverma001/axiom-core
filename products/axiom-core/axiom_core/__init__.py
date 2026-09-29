@@ -9,19 +9,28 @@ from .models import (
     SectorDefinition,
     SchemaDefinition,
     FeedbackOutput,
-    DecisionOutput
+    DecisionOutput,
+    ChoiceResult,
+    ScoreResult,
+    NoulResult,
+    TypedQuestion
 )
-from .conformal import MartingaleSafetyGate
+from .conformal import MartingaleSafetyGate, BrierCalibrator
 from .ipc_bridge import AxiomIpcBridge
 from .client import AxiomClient
 
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 __all__ = [
     "AxiomClient",
     "AxiomIpcBridge",
     "MartingaleSafetyGate",
+    "BrierCalibrator",
     "DecisionOutput",
     "FeedbackOutput",
+    "ChoiceResult",
+    "ScoreResult",
+    "NoulResult",
+    "TypedQuestion",
     "LeafDefinition",
     "SectorDefinition",
     "SchemaDefinition",

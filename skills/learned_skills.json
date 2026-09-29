@@ -34,11 +34,11 @@
     "args": {
       "action": "minimize_all"
     },
-    "success_count": 134,
+    "success_count": 138,
     "failure_count": 0,
-    "avg_latency_us": 358282,
+    "avg_latency_us": 182374,
     "source": "DEFAULT_REFLEX",
-    "last_executed": 1790630568.4494607,
+    "last_executed": 1790661695.5628362,
     "confidence": 0.999
   },
   {
@@ -55,11 +55,11 @@
     "args": {
       "action": "mute"
     },
-    "success_count": 191,
+    "success_count": 197,
     "failure_count": 0,
-    "avg_latency_us": 101106,
+    "avg_latency_us": 48071,
     "source": "DEFAULT_REFLEX",
-    "last_executed": 1790630567.8454661,
+    "last_executed": 1790661695.4898448,
     "confidence": 0.999
   },
   {
@@ -237,12 +237,12 @@
     "args": {
       "action": "open_camera"
     },
-    "success_count": 63,
+    "success_count": 65,
     "failure_count": 0,
-    "avg_latency_us": 621726,
+    "avg_latency_us": 919597,
     "source": "DEFAULT_REFLEX",
-    "last_executed": 1790630557.290323,
-    "confidence": 0.9209
+    "last_executed": 1790661686.0431895,
+    "confidence": 0.9191
   },
   {
     "skill_id": "skill_camera_capture_person",
@@ -264,12 +264,12 @@
       "timeout_s": 12.0,
       "open_viewer": true
     },
-    "success_count": 57,
+    "success_count": 59,
     "failure_count": 0,
-    "avg_latency_us": 9002817,
+    "avg_latency_us": 8567898,
     "source": "DEFAULT_REFLEX",
-    "last_executed": 1790630565.108989,
-    "confidence": 0.8727
+    "last_executed": 1790661693.7027042,
+    "confidence": 0.8703
   },
   {
     "skill_id": "skill_camera_snapshot",
@@ -311,11 +311,11 @@
     "args": {
       "url": "https://www.youtube.com"
     },
-    "success_count": 78,
+    "success_count": 80,
     "failure_count": 0,
-    "avg_latency_us": 215191,
+    "avg_latency_us": 243524,
     "source": "DEFAULT_REFLEX",
-    "last_executed": 1790630567.191877,
+    "last_executed": 1790661695.1307878,
     "confidence": 0.999
   },
   {
@@ -358,12 +358,12 @@
       "action": "play_music",
       "query": ""
     },
-    "success_count": 62,
+    "success_count": 64,
     "failure_count": 0,
-    "avg_latency_us": 1523951,
+    "avg_latency_us": 1341648,
     "source": "DEFAULT_REFLEX",
-    "last_executed": 1790630566.615189,
-    "confidence": 0.9009
+    "last_executed": 1790661694.7169323,
+    "confidence": 0.9
   },
   {
     "skill_id": "skill_close_notepad",
@@ -745,13 +745,13 @@
     "args": {
       "action": "clean_temp"
     },
-    "success_count": 5,
+    "success_count": 7,
     "failure_count": 0,
-    "avg_latency_us": 40454,
+    "avg_latency_us": 31131,
     "source": "RLCD_DYNAMIC_SYNTHESIS",
     "created_at": 1790280898.881903,
-    "last_executed": 1790265712.9750614,
-    "confidence": 0.9161
+    "last_executed": 1790652179.9544375,
+    "confidence": 0.9257
   },
   {
     "skill_id": "skill_rlcd_1790281010",
@@ -761,13 +761,13 @@
     ],
     "tool": "get_foreground_window",
     "args": {},
-    "success_count": 3,
+    "success_count": 5,
     "failure_count": 0,
-    "avg_latency_us": 22,
+    "avg_latency_us": 606,
     "source": "RLCD_DYNAMIC_SYNTHESIS",
     "created_at": 1790281010.2892094,
-    "last_executed": 1790281070.8360293,
-    "confidence": 0.9137
+    "last_executed": 1790652621.8491468,
+    "confidence": 0.9262
   },
   {
     "skill_id": "skill_rlcd_1790281132",
@@ -974,12 +974,12 @@
     "args": {
       "script": "Get-Date"
     },
-    "success_count": 5,
+    "success_count": 6,
     "failure_count": 0,
     "avg_latency_us": 30.0,
     "source": "RLCD_DYNAMIC_SYNTHESIS",
     "created_at": 1790630157.5517812,
-    "last_executed": 1790630570.126519
+    "last_executed": 1790661697.5328565
   },
   {
     "skill_id": "skill_rlcd_1790630178",
@@ -1100,5 +1100,126 @@
     "source": "RLCD_DYNAMIC_SYNTHESIS",
     "created_at": 1790630570.1371415,
     "last_executed": 1790630570.137142
+  },
+  {
+    "skill_id": "skill_rlcd_1790652226",
+    "name": "Autonomous Plan: add 4 and 6 in calculator app",
+    "triggers": [
+      "add 4 and 6 in calculator app"
+    ],
+    "tool": "multi_step",
+    "steps": [
+      {
+        "action": "app_control",
+        "args": {
+          "action": "launch",
+          "target": "calculator"
+        }
+      },
+      {
+        "action": "visual_spatial_click",
+        "args": {
+          "target": "calculator button equals",
+          "click": true
+        }
+      }
+    ],
+    "args": {},
+    "success_count": 1,
+    "failure_count": 0,
+    "avg_latency_us": 60.0,
+    "source": "RLCD_DYNAMIC_SYNTHESIS",
+    "created_at": 1790652226.0354414,
+    "last_executed": 1790652226.0354419
+  },
+  {
+    "skill_id": "skill_rlcd_1790652277",
+    "name": "Autonomous Plan: add 4 and 6 in calculator app",
+    "triggers": [
+      "add 4 and 6 in calculator app"
+    ],
+    "tool": "multi_step",
+    "steps": [
+      {
+        "action": "app_control",
+        "args": {
+          "action": "launch",
+          "target": "calculator"
+        }
+      },
+      {
+        "action": "ocr",
+        "args": {
+          "search_term": "4 + 6 = 10"
+        }
+      }
+    ],
+    "args": {},
+    "success_count": 1,
+    "failure_count": 0,
+    "avg_latency_us": 60.0,
+    "source": "RLCD_DYNAMIC_SYNTHESIS",
+    "created_at": 1790652277.8863535,
+    "last_executed": 1790652277.8863542
+  },
+  {
+    "skill_id": "skill_rlcd_1790652277",
+    "name": "Autonomous Plan: add 4 and 6 in calculator app",
+    "triggers": [
+      "add 4 and 6 in calculator app"
+    ],
+    "tool": "multi_step",
+    "steps": [
+      {
+        "action": "app_control",
+        "args": {
+          "action": "launch",
+          "target": "calculator"
+        }
+      },
+      {
+        "action": "ocr",
+        "args": {
+          "search_term": "4 + 6 = 10"
+        }
+      }
+    ],
+    "args": {},
+    "success_count": 1,
+    "failure_count": 0,
+    "avg_latency_us": 60.0,
+    "source": "RLCD_DYNAMIC_SYNTHESIS",
+    "created_at": 1790652277.8971095,
+    "last_executed": 1790652277.89711
+  },
+  {
+    "skill_id": "skill_rlcd_1790661697",
+    "name": "Autonomous Plan: launch notepad and take a screenshot",
+    "triggers": [
+      "launch notepad and take a screenshot"
+    ],
+    "tool": "multi_step",
+    "steps": [
+      {
+        "action": "app_control",
+        "args": {
+          "action": "launch",
+          "target": "notepad"
+        }
+      },
+      {
+        "action": "system_control",
+        "args": {
+          "action": "screenshot"
+        }
+      }
+    ],
+    "args": {},
+    "success_count": 1,
+    "failure_count": 0,
+    "avg_latency_us": 60.0,
+    "source": "RLCD_DYNAMIC_SYNTHESIS",
+    "created_at": 1790661697.5444784,
+    "last_executed": 1790661697.544479
   }
 ]

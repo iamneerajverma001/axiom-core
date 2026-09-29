@@ -39,6 +39,8 @@ struct alignas(64) AxiomIpcBuffer {
     char input_text[2048];    // Input prompt / directive
     char choice_label[256];   // Action name / label
     char output_json[4096];   // Full JSON diagnostic payload
+    uint32_t feature_dim;     // Direct binary feature tensor dimension
+    float feature_vector[128];// Direct AVX2 float register slot (zero-copy)
 };
 #pragma pack(pop)
 
