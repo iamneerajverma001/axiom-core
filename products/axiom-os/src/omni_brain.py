@@ -33,6 +33,9 @@ You accomplish the user's desktop computing goals by reasoning in an Extreme Mul
 5. All milestones in the Hierarchical Plan Ledger must be executed and verified before concluding with your final answer.
 
 AVAILABLE TOOLS:
+- visual_tensor_click(target="...", click=True, button="left"|"right"|"double", verify=True):
+  Direct sub-16ms multimodal visual-spatial click via multi-scale soft-argmax and two-stage patch refinement,
+  verified by zero-copy 128-dim binary float tensor IPC reflex. Locates and clicks any UI element, button, or dialog.
 - visual_spatial_click(target="...", click=True, button="left"|"right"|"double", verify=True):
   Direct sub-16ms multimodal visual-spatial click via multi-scale soft-argmax and two-stage patch refinement.
   Directly locates and clicks physical desktop buttons, dialogs, icons, canvas controls, or calculator buttons without needing DOM or OCR!
@@ -40,6 +43,8 @@ AVAILABLE TOOLS:
 - visual_click_sequence(targets=["target1", "target2", ...], delay_between_s=0.15):
   Executes an ordered pipeline of direct visual clicks across the screen with settling probes.
   Example: visual_click_sequence(targets=["calculator button 7", "calculator button plus", "calculator button 8", "calculator button equals"])
+- keyboard_type(text="...", delay_s=0.01, use_clipboard=False):
+  Types text or sends keystrokes directly into the focused window, input field, editor, or dialog.
 - c_cpp_exec(code="...", file_path="...", compiler="gcc"|"g++"):
   Write, compile with native MinGW GCC/G++, and immediately execute C or C++ programs on Windows.
   Returns stdout, stderr, and exit_code. PREFER THIS tool whenever asked to write or run C or C++ scripts, algorithms, or programs.
@@ -341,7 +346,52 @@ def decompose_hierarchical_plan(user_goal: str, pc_state: dict) -> HierarchicalE
         ))
         m_id += 1
 
-    # 2. Specialized Decomposition: C / C++ Compilation & Benchmarking
+    # 2. Specialized Decomposition: Multi-Window Visual Tracking & GUI Input Workflow
+    elif any(k in goal_lower for k in ("type", "write", "input", "enter text", "fill")) and any(k in goal_lower for k in ("notepad", "editor", "form", "search bar", "field", "box", "calc", "window")):
+        app_target = "notepad" if "notepad" in goal_lower else ("calc" if "calc" in goal_lower else "window")
+        milestones.append(Milestone(
+            milestone_id=m_id,
+            stage="Perception & Setup",
+            description=f"Launch or focus target application window '{app_target}'",
+            designated_tool="app_control",
+            tool_args={"action": "launch" if app_target in ("notepad", "calc") else "focus_mode", "target": app_target},
+            expected_outcome=f"Target window '{app_target}' in foreground"
+        ))
+        m_id += 1
+
+        milestones.append(Milestone(
+            milestone_id=m_id,
+            stage="Core Execution",
+            description=f"Focus target input area via Direct Vision-Tensor soft-argmax",
+            designated_tool="visual_tensor_click",
+            tool_args={"target": f"{app_target} input area"},
+            expected_outcome="Target input region focused via binary tensor reflex"
+        ))
+        m_id += 1
+
+        text_match = re.search(r'["\']([^"\']+)["\']', user_goal)
+        text_to_type = text_match.group(1) if text_match else user_goal
+        milestones.append(Milestone(
+            milestone_id=m_id,
+            stage="Core Execution",
+            description=f"Type text into active input field: '{text_to_type}'",
+            designated_tool="keyboard_type",
+            tool_args={"text": text_to_type},
+            expected_outcome="Text input typed cleanly into focused window"
+        ))
+        m_id += 1
+
+        milestones.append(Milestone(
+            milestone_id=m_id,
+            stage="Grounding Verification",
+            description="Verify visual state transition and window buffer content",
+            designated_tool="screen_ocr",
+            tool_args={"action": "read_screen"},
+            expected_outcome="Text verified on screen display"
+        ))
+        m_id += 1
+
+    # 3. Specialized Decomposition: C / C++ Compilation & Benchmarking
     elif any(k in goal_lower for k in ("c script", "c code", "c++", "cpp", "compile", "gcc", "g++", "palindrome", "find palindromes")):
         milestones.append(Milestone(
             milestone_id=m_id,

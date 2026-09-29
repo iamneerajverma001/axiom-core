@@ -300,6 +300,60 @@ def send_key_combo(keys: list, delay_s: float = 0.02):
     for k in reversed(keys):
         user32.keybd_event(k, 0, KEYEVENTF_KEYUP, 0)
 
+def keyboard_type_text(text: str, delay_s: float = 0.01, use_clipboard: bool = False) -> dict:
+    """Types text directly into the focused window or input field."""
+    attach_to_default_desktop()
+    if not text:
+        return {"success": True, "typed_len": 0}
+
+    # Use clipboard paste for long text or unicode characters
+    if use_clipboard or len(text) > 40:
+        try:
+            import win32clipboard
+            win32clipboard.OpenClipboard()
+            win32clipboard.EmptyClipboard()
+            win32clipboard.SetClipboardText(text, win32clipboard.CF_UNICODETEXT)
+            win32clipboard.CloseClipboard()
+            # Send Ctrl+V
+            send_key_combo([0x11, 0x56])  # VK_CONTROL, VK_V
+            return {"success": True, "method": "clipboard_paste", "length": len(text)}
+        except Exception:
+            pass
+
+    # Send character keystrokes via Windows VkKeyScanW
+    try:
+        typed = 0
+        for ch in text:
+            if ch == '\n':
+                user32.keybd_event(0x0D, 0, 0, 0)  # VK_RETURN
+                user32.keybd_event(0x0D, 0, KEYEVENTF_KEYUP, 0)
+                typed += 1
+                time.sleep(delay_s)
+                continue
+            elif ch == '\t':
+                user32.keybd_event(0x09, 0, 0, 0)  # VK_TAB
+                user32.keybd_event(0x09, 0, KEYEVENTF_KEYUP, 0)
+                typed += 1
+                time.sleep(delay_s)
+                continue
+
+            vk = user32.VkKeyScanW(ord(ch))
+            if vk != -1:
+                shift = (vk >> 8) & 1
+                code = vk & 0xFF
+                if shift:
+                    user32.keybd_event(0x10, 0, 0, 0)  # VK_SHIFT
+                user32.keybd_event(code, 0, 0, 0)
+                user32.keybd_event(code, 0, KEYEVENTF_KEYUP, 0)
+                if shift:
+                    user32.keybd_event(0x10, 0, KEYEVENTF_KEYUP, 0)
+                typed += 1
+            time.sleep(delay_s)
+        return {"success": True, "method": "keystrokes", "length": typed}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
 # ==============================================================================
 # 1. POWERSHELL EXECUTION TOOL
 # ==============================================================================
@@ -1975,6 +2029,12 @@ def execute_tool(tool_name: str, **kwargs) -> dict:
             delay_between_s=float(kwargs.get("delay_between_s", 0.15)),
             monitor_index=mon_idx,
             virtual_span=bool(kwargs.get("virtual_span", False))
+        )
+    elif t_clean in ("keyboard_type", "type_text", "type", "keyboard_input", "write_text"):
+        return keyboard_type_text(
+            text=str(kwargs.get("text", kwargs.get("content", kwargs.get("query", "")))),
+            delay_s=float(kwargs.get("delay_s", 0.01)),
+            use_clipboard=bool(kwargs.get("use_clipboard", False))
         )
     else:
         return {"success": False, "error": f"Unknown tool: '{tool_name}'"}

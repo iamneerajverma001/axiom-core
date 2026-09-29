@@ -1259,6 +1259,144 @@ class AxiomUniversalHandler(http.server.SimpleHTTPRequestHandler):
             return
 
         # ---------------------------------------------------------
+        # WIN32 HARDWARE HOTKEY TOGGLE: POST /api/hotkey/toggle
+        # ---------------------------------------------------------
+        elif req_path == '/api/hotkey/toggle':
+            try:
+                body = json.loads(raw_body) if raw_body else {}
+                enable = body.get('enable')
+                if enable is None:
+                    cur = bridge.hotkey_daemon.get_status().get('active', False)
+                    enable = not cur
+                if enable:
+                    bridge.hotkey_daemon.start(callback=lambda: omni_actuator.visual_spatial_click(target="center", click=False))
+                else:
+                    bridge.hotkey_daemon.stop()
+                self._send_json(bridge.hotkey_daemon.get_status())
+            except Exception as e:
+                self._send_json({"error": str(e)}, status=500)
+            return
+
+        # ---------------------------------------------------------
+        # ENTERPRISE LIVE BENCHMARKS: POST /api/benchmark/*
+        # ---------------------------------------------------------
+        elif req_path == '/api/benchmark/fintech':
+            try:
+                body = json.loads(raw_body) if raw_body else {}
+                count = min(max(int(body.get('count', 5000)), 100), 50000)
+                try:
+                    from solutions.fintech_pretrade_firewall.firewall import PreTradeRiskFirewall, TradeOrder
+                except Exception:
+                    from products.axiom_core.solutions.fintech_pretrade_firewall.firewall import PreTradeRiskFirewall, TradeOrder
+
+                firewall = PreTradeRiskFirewall(max_order_notional=100_000.0, max_daily_notional=500_000.0, price_collar_pct=0.05)
+                t0 = time.perf_counter()
+                approved_count = 0
+                for i in range(count):
+                    order = TradeOrder(
+                        order_id=f"ORD-{i}",
+                        symbol="NVDA" if i % 2 == 0 else "AAPL",
+                        side="BUY" if i % 3 != 0 else "SELL",
+                        price=120.0 + (i % 5),
+                        quantity=10 + (i % 20),
+                        account_id="ACC-HFT-1"
+                    )
+                    res = firewall.evaluate_order(order, mid_market_price=122.0)
+                    if res.get("approved"):
+                        approved_count += 1
+                elapsed_ms = (time.perf_counter() - t0) * 1000.0
+                throughput = count / (elapsed_ms / 1000.0) if elapsed_ms > 0 else 0
+                self._send_json({
+                    "success": True,
+                    "benchmark": "FinTech Pre-Trade Risk Firewall",
+                    "orders_evaluated": count,
+                    "approved": approved_count,
+                    "rejected": count - approved_count,
+                    "elapsed_ms": round(elapsed_ms, 2),
+                    "throughput_orders_per_sec": round(throughput, 0),
+                    "avg_latency_us": round((elapsed_ms * 1000.0) / count, 2)
+                })
+            except Exception as e:
+                self._send_json({"success": False, "error": str(e)}, status=500)
+            return
+
+        elif req_path == '/api/benchmark/cyber':
+            try:
+                body = json.loads(raw_body) if raw_body else {}
+                count = min(max(int(body.get('count', 10000)), 100), 50000)
+                from solutions.cybersecurity_packet_guard.packet_guard import PacketGuard, PacketHeader
+
+                guard = PacketGuard()
+                t0 = time.perf_counter()
+                allowed = 0
+                for i in range(count):
+                    pkt = PacketHeader(
+                        packet_id=i,
+                        src_ip=f"10.0.{i % 256}.{i % 254 + 1}",
+                        dst_ip="192.168.1.100",
+                        src_port=1024 + (i % 50000),
+                        dst_port=443 if i % 5 != 0 else 80,
+                        protocol=6,
+                        tcp_flags=0x10,
+                        payload_len=64 + (i % 500),
+                        window_size=65535
+                    )
+                    res = guard.inspect_packet(pkt)
+                    if res.get("action") == "PASS":
+                        allowed += 1
+                elapsed_ms = (time.perf_counter() - t0) * 1000.0
+                throughput = count / (elapsed_ms / 1000.0) if elapsed_ms > 0 else 0
+                self._send_json({
+                    "success": True,
+                    "benchmark": "Cybersecurity Packet Guard",
+                    "packets_inspected": count,
+                    "allowed": allowed,
+                    "blocked": count - allowed,
+                    "elapsed_ms": round(elapsed_ms, 2),
+                    "throughput_packets_per_sec": round(throughput, 0),
+                    "avg_latency_us": round((elapsed_ms * 1000.0) / count, 2)
+                })
+            except Exception as e:
+                self._send_json({"success": False, "error": str(e)}, status=500)
+            return
+
+        elif req_path == '/api/benchmark/robotics':
+            try:
+                body = json.loads(raw_body) if raw_body else {}
+                cycles = min(max(int(body.get('cycles', 1000)), 100), 10000)
+                from solutions.robotics_motor_reflex.motor_reflex import MotorReflexArc, JointTelemetry
+
+                ctrl = MotorReflexArc()
+                t0 = time.perf_counter()
+                normal_cycles = 0
+                for i in range(cycles):
+                    telem = JointTelemetry(
+                        joint_id=1,
+                        commanded_torque_nm=12.0 + (0.1 * (i % 15)),
+                        measured_torque_nm=11.9,
+                        angular_velocity_rad_s=3.14,
+                        proximity_distance_m=0.8
+                    )
+                    res = ctrl.evaluate_cycle(telem)
+                    if "NORMAL" in res.get("status", "") or "SATURATED" in res.get("status", ""):
+                        normal_cycles += 1
+                elapsed_ms = (time.perf_counter() - t0) * 1000.0
+                hz = cycles / (elapsed_ms / 1000.0) if elapsed_ms > 0 else 0
+                self._send_json({
+                    "success": True,
+                    "benchmark": "Robotics High-Frequency Motor Reflex",
+                    "control_cycles": cycles,
+                    "normal": normal_cycles,
+                    "interventions": cycles - normal_cycles,
+                    "elapsed_ms": round(elapsed_ms, 2),
+                    "control_loop_frequency_hz": round(hz, 0),
+                    "cycle_latency_us": round((elapsed_ms * 1000.0) / cycles, 2)
+                })
+            except Exception as e:
+                self._send_json({"success": False, "error": str(e)}, status=500)
+            return
+
+        # ---------------------------------------------------------
         # 4. OS HARDWARE ACTIONS: POST /api/os_action
         # ---------------------------------------------------------
         elif req_path == '/api/os_action':
@@ -1413,6 +1551,17 @@ class AxiomUniversalHandler(http.server.SimpleHTTPRequestHandler):
                 self._send_json(status)
             except Exception as e:
                 self._send_json({"error": str(e)}, status=500)
+            return
+
+        # ---------------------------------------------------------
+        # WIN32 HARDWARE HOTKEY STATUS: GET /api/hotkey/status
+        # ---------------------------------------------------------
+        elif req_path == '/api/hotkey/status':
+            try:
+                status = bridge.hotkey_daemon.get_status()
+                self._send_json(status)
+            except Exception as e:
+                self._send_json({"active": False, "error": str(e)}, status=500)
             return
 
         # ---------------------------------------------------------

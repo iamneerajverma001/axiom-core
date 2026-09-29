@@ -10,8 +10,12 @@ import time
 import json
 
 pkg_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-if pkg_dir not in sys.path:
-    sys.path.insert(0, pkg_dir)
+root_dir = os.path.dirname(os.path.dirname(pkg_dir))
+core_dir = os.path.join(root_dir, "products", "axiom-core")
+
+for d in (pkg_dir, root_dir, core_dir):
+    if d not in sys.path:
+        sys.path.insert(0, d)
 
 from src import (
     omni_sensor,
@@ -125,7 +129,73 @@ class TestAxiomOSArchitecture(unittest.TestCase):
         self.assertIn("phys_x", res)
         self.assertIn("phys_y", res)
 
+    def test_gui_workflow_hierarchical_planning(self):
+        """Validates multi-window GUI workflow DAG decomposition for typing and visual clicking."""
+        plan = omni_brain.decompose_hierarchical_plan("open notepad and write 'hello world'", {})
+        self.assertIsNotNone(plan)
+        self.assertGreaterEqual(len(plan.milestones), 4)
+        tools = [m.designated_tool for m in plan.milestones if m.designated_tool]
+        self.assertIn("app_control", tools)
+        self.assertIn("visual_tensor_click", tools)
+        self.assertIn("keyboard_type", tools)
+
+    def test_keyboard_type_tool_dispatch(self):
+        """Validates keyboard_type tool execution dispatch."""
+        res = omni_actuator.execute_tool("keyboard_type", text="test_token")
+        self.assertTrue(res.get("success"))
+        self.assertIn("method", res)
+
+    def test_hotkey_reflex_daemon(self):
+        """Validates HotkeyReflexDaemon status lifecycle."""
+        from src.axiom_os_bridge import HotkeyReflexDaemon
+        daemon = HotkeyReflexDaemon(hotkey_id=9999, modifiers=0x0001, vk=0x56)
+        status = daemon.get_status()
+        self.assertFalse(status["active"])
+        self.assertEqual(status["id"], 9999)
+        self.assertEqual(status["vk"], "0x56")
+
+    def test_enterprise_benchmark_solutions(self):
+        """Validates that FinTech, Cybersecurity, and Robotics reference solutions run and report telemetry."""
+        from solutions.fintech_pretrade_firewall.firewall import PreTradeRiskFirewall, TradeOrder
+        from solutions.cybersecurity_packet_guard.packet_guard import PacketGuard, PacketHeader
+        from solutions.robotics_motor_reflex.motor_reflex import MotorReflexArc, JointTelemetry
+
+        # FinTech
+        fw = PreTradeRiskFirewall(max_order_notional=50_000.0)
+        order = TradeOrder(order_id="TEST-1", symbol="NVDA", side="BUY", price=120.0, quantity=10, account_id="ACC-1")
+        res_fw = fw.evaluate_order(order, mid_market_price=120.0)
+        self.assertTrue(res_fw.get("approved"))
+
+        # Cyber
+        pg = PacketGuard()
+        pkt = PacketHeader(
+            packet_id=1,
+            src_ip="10.0.0.1",
+            dst_ip="192.168.1.1",
+            src_port=1234,
+            dst_port=443,
+            protocol=6,
+            tcp_flags=0x10,
+            payload_len=128,
+            window_size=65535
+        )
+        res_pg = pg.inspect_packet(pkt)
+        self.assertEqual(res_pg.get("action"), "PASS")
+
+        # Robotics
+        ctrl = MotorReflexArc()
+        telem = JointTelemetry(
+            joint_id=1,
+            commanded_torque_nm=12.0,
+            measured_torque_nm=11.9,
+            angular_velocity_rad_s=3.14,
+            proximity_distance_m=0.8
+        )
+        res_rob = ctrl.evaluate_cycle(telem)
+        self.assertIn("NORMAL", res_rob.get("status", ""))
+
 if __name__ == "__main__":
     unittest.main()
+
 
 

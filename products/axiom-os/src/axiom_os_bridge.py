@@ -15,6 +15,7 @@ import subprocess
 import socket
 import json
 import time
+import threading
 import ctypes
 import webbrowser
 import zipfile
@@ -959,3 +960,109 @@ def execute_axiom_action(choice_id: int, user_input: str) -> dict:
 
     else:
         return {"success": True, "action_id": choice_id, "message": f"Action #{choice_id} committed via Bare-Metal Axiom Fast-Path."}
+
+# ==============================================================================
+# 8. WIN32 HARDWARE HOTKEY REFLEX DAEMON (Win + Alt + V)
+# ==============================================================================
+class HotkeyReflexDaemon:
+    """
+    Win32 Global Hardware Hotkey Reflex Daemon.
+    Registers a system-wide hotkey (default: Win + Alt + V) to trigger
+    instant sub-16ms visual spatial perception and binary tensor reflex.
+    """
+    def __init__(self, modifiers: int = 0x0008 | 0x0001, vk: int = 0x56, hotkey_id: int = 9001):  # Win + Alt + V
+        self.modifiers = modifiers
+        self.vk = vk
+        self.hotkey_id = hotkey_id
+        self._thread = None
+        self._thread_id = None
+        self._running = False
+        self._lock = threading.Lock()
+        self.last_triggered_ts = 0.0
+        self.trigger_count = 0
+        self.callback = None
+
+    def start(self, callback=None) -> bool:
+        if sys.platform != 'win32':
+            return False
+        with self._lock:
+            if self._running:
+                return True
+            self.callback = callback
+            self._running = True
+            ready_evt = threading.Event()
+            self._thread = threading.Thread(
+                target=self._msg_loop,
+                args=(ready_evt,),
+                daemon=True,
+                name="AxiomHotkeyDaemon"
+            )
+            self._thread.start()
+            ready_evt.wait(timeout=1.0)
+            return self._running
+
+    def _msg_loop(self, ready_evt):
+        user32 = ctypes.windll.user32
+        kernel32 = ctypes.windll.kernel32
+        self._thread_id = kernel32.GetCurrentThreadId()
+
+        res = user32.RegisterHotKey(None, self.hotkey_id, self.modifiers, self.vk)
+        if not res:
+            self._running = False
+            ready_evt.set()
+            return
+
+        ready_evt.set()
+
+        class MSG(ctypes.Structure):
+            _fields_ = [
+                ("hwnd", ctypes.c_void_p),
+                ("message", ctypes.c_uint),
+                ("wParam", ctypes.c_void_p),
+                ("lParam", ctypes.c_void_p),
+                ("time", ctypes.c_uint32),
+                ("pt_x", ctypes.c_long),
+                ("pt_y", ctypes.c_long)
+            ]
+
+        msg = MSG()
+        try:
+            while self._running:
+                ret = user32.GetMessageW(ctypes.byref(msg), None, 0, 0)
+                if ret <= 0:
+                    break
+                if msg.message == 0x0312 and msg.wParam == self.hotkey_id:
+                    self.last_triggered_ts = time.time()
+                    self.trigger_count += 1
+                    if self.callback:
+                        try:
+                            self.callback()
+                        except Exception:
+                            pass
+                user32.TranslateMessage(ctypes.byref(msg))
+                user32.DispatchMessageW(ctypes.byref(msg))
+        finally:
+            user32.UnregisterHotKey(None, self.hotkey_id)
+            self._running = False
+
+    def stop(self):
+        with self._lock:
+            if not self._running:
+                return
+            self._running = False
+            user32 = ctypes.windll.user32
+            if self._thread_id:
+                user32.PostThreadMessageW(self._thread_id, 0x0012, 0, 0)  # WM_QUIT
+
+    def get_status(self) -> dict:
+        return {
+            "active": self._running,
+            "id": self.hotkey_id,
+            "hotkey": "Win + Alt + V",
+            "vk": f"0x{self.vk:02X}",
+            "trigger_count": self.trigger_count,
+            "last_triggered": self.last_triggered_ts
+        }
+
+hotkey_daemon = HotkeyReflexDaemon()
+
