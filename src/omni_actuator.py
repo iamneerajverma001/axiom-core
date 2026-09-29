@@ -1944,7 +1944,7 @@ def execute_tool(tool_name: str, **kwargs) -> dict:
         return window_manager(kwargs.get("action", "maximize"))
     elif t_clean in ("system_theme_control", "theme", "dark_mode", "light_mode"):
         return system_theme_control(kwargs.get("action", "toggle"))
-    elif t_clean in ("visual_spatial_click", "visual_click", "screen_click", "vision_click", "spatial_click"):
+    elif t_clean in ("visual_spatial_click", "visual_click", "screen_click", "vision_click", "spatial_click", "visual_tensor_click", "tensor_click"):
         mon_idx = kwargs.get("monitor_index", kwargs.get("monitor", None))
         if mon_idx is not None:
             try:

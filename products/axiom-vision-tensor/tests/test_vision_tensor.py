@@ -118,6 +118,20 @@ class TestVisionTensorEngine(unittest.TestCase):
         finally:
             self.engine.execute_direct_click = orig_click
 
+    def test_extract_128d_feature_vector(self):
+        mock_map = np.ones((128, 128), dtype=np.float32)
+        vec = self.engine.extract_128d_feature_vector(mock_map)
+        self.assertEqual(len(vec), 128)
+        self.assertTrue(all(isinstance(x, float) for x in vec))
+        self.assertAlmostEqual(sum(vec[:64]), 1.0, places=3)
+        self.assertAlmostEqual(sum(vec[64:]), 1.0, places=3)
+
+    def test_predict_contains_128d_feature_vector(self):
+        res = self.engine.predict_click_coordinates(self.test_img, "close button", screen_w=1200, screen_h=800)
+        self.assertIn("feature_vector_128d", res)
+        self.assertEqual(len(res["feature_vector_128d"]), 128)
+
 if __name__ == "__main__":
     unittest.main()
+
 

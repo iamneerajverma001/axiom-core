@@ -104,6 +104,27 @@ class TestAxiomOSArchitecture(unittest.TestCase):
         self.assertTrue(hasattr(buf, "feature_vector"))
         self.assertEqual(len(buf.feature_vector), 128)
 
+    def test_vision_tensor_128d_feature_vector_extraction(self):
+        """Validates that VisualSpatialTensorEngine transforms 2D activation maps into 128-dim float tensors."""
+        import numpy as np
+        engine = omni_vision_tensor.vision_tensor_engine
+        mock_map = np.ones((128, 128), dtype=np.float32)
+        vec = engine.extract_128d_feature_vector(mock_map)
+        self.assertEqual(len(vec), 128)
+        self.assertTrue(all(isinstance(x, float) for x in vec))
+        # Horizontal and vertical projections must both sum to ~1.0
+        self.assertAlmostEqual(sum(vec[:64]), 1.0, places=3)
+        self.assertAlmostEqual(sum(vec[64:]), 1.0, places=3)
+
+    def test_visual_tensor_click_tool_dispatch(self):
+        """Validates visual_tensor_click tool dispatch and presence of 128-dim feature vector."""
+        res = omni_actuator.execute_tool("visual_tensor_click", target="calculator button 7", click=False)
+        self.assertTrue(res.get("success"))
+        self.assertIn("feature_vector_128d", res)
+        self.assertEqual(len(res["feature_vector_128d"]), 128)
+        self.assertIn("phys_x", res)
+        self.assertIn("phys_y", res)
+
 if __name__ == "__main__":
     unittest.main()
 
