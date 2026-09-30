@@ -166,6 +166,16 @@ def capture_screen_fast(
     """
     if sys.platform == 'win32' and user32 and gdi32:
         try:
+            try:
+                hwinsta = user32.OpenWindowStationW("WinSta0", False, 0x037F)
+                if hwinsta:
+                    user32.SetProcessWindowStation(hwinsta)
+                hdesk = user32.OpenInputDesktop(0, False, 0x01FF)
+                if hdesk:
+                    user32.SetThreadDesktop(hdesk)
+            except Exception:
+                pass
+
             if virtual_span:
                 # Capture entire multi-monitor virtual desktop
                 x = user32.GetSystemMetrics(76) # SM_XVIRTUALSCREEN
@@ -188,8 +198,9 @@ def capture_screen_fast(
             hdc_screen = user32.GetDC(0)
             hdc_mem = gdi32.CreateCompatibleDC(hdc_screen)
             hbm = gdi32.CreateCompatibleBitmap(hdc_screen, w, h)
-            gdi32.SelectObject(hdc_mem, hbm)
+            old_bm = gdi32.SelectObject(hdc_mem, hbm)
             gdi32.BitBlt(hdc_mem, 0, 0, w, h, hdc_screen, x, y, 0x00CC0020)
+            gdi32.SelectObject(hdc_mem, old_bm)
 
             class _BITMAPINFOHEADER(ctypes.Structure):
                 _fields_ = [
