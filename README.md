@@ -1,69 +1,87 @@
-# Axiom-1: Custom Ultra-Low Latency Hybrid Decision Engine
-> **The True Successor to Jev, Laya, and Laya-MLX**  
-> *Windows Native C++ (DirectML / CUDA) | Asynchronous System 1 Event Router with Dynamic System 2 Validation*
+# Axiom Monorepo Architecture
+
+> **Ultra-Low-Latency Neuromorphic Intelligence & Autonomous PC Operating System**  
+> *The True Successor to Jev, Laya, and Laya-MLX.*
 
 ---
 
-## 🚀 Key Advantages Over Jev, Laya, and Laya-MLX
+## 🏛️ Monorepo Products Architecture
 
-| Dimension | **Jev (TypeSafe AI)** | **Laya / Laya-MLX (ConvAI)** | **Axiom-1 (This Engine)** |
-| :--- | :--- | :--- | :--- |
-| **Execution Tier** | Cloud API only (~250ms) | Local single-tier (~33ms) | **Asynchronous Fast-Path (<0.07ms) + Dynamic System 2 Fallback** |
-| **Throughput** | Limited by API rate limits | ~30 req/sec | **15,000+ decisions / sec** (Local C++ / DirectML) |
-| **Choice Scaling** | Flat softmax (<100 choices) | Flat softmax (<100 choices) | **Hierarchical Memory-Pointer Trees (255+ without collapse)** |
-| **Reasoning Depth** | Single feedforward pass | Single feedforward pass | **Latent Deliberation Unit (LDU: 3-cycle latent CoT in hidden space)** |
-| **Confidence Rigor** | Heuristic RLCD | Heuristic RLCD | **Split Conformal Prediction (Rigorous $1 - \alpha$ Mathematical Bound)** |
-| **Memory Management** | Cloud hosted | Unmanaged Python/PyTorch | **Strict 64-byte Cache-Aligned (`alignas(64)`), Zero Heap Allocations** |
-| **UI / UX Suite** | None (Raw API) | None (Script only) | **Visual DAG Schema Studio + Real-Time Telemetry Waterfall Dashboard** |
-
----
-
-## 🏛️ The 3-Layer Execution Stack
-
-1. **Layer 1: Bare-Metal Sparse Tensor Loop & LDU (<5ms):**
-   * Encodes incoming telemetry via kernelized linear attention in $O(N)$ linear time.
-   * Runs sparse voltage thresholding (SNN-inspired) to fire only active spike potentials.
-   * Executes $T=3$ cycles of recurrent latent cross-attention reasoning on candidate markers without generating text tokens.
-2. **Layer 2: Memory-Pointer Hierarchical Register Trees:**
-   * Cache-aligned (`alignas(64)`) contiguous memory pointer arrays.
-   * Evaluates Macro Branch Sectors $\to$ Targeted Local Leaf Matrices, eliminating dimensional bottlenecks.
-   * Computes normalized Shannon entropy $H(P)$ and variance metrics.
-   * If $\max P \ge 0.85 \land H(P) \le 0.20$, commits directly via **Fast-Path Exit (<0.07ms)**.
-3. **Layer 3: Dynamic Bus-Halt & System 2 Agentic Fallback Frame:**
-   * If confidence $< 0.85$ or entropy is high, an atomic thread interrupt halts the fast path.
-   * Interconnects with local `llama.cpp` / Ollama loopback (`localhost:11434`) with a 300ms circuit breaker.
-   * Eliminates hallucinations under extreme ambiguity with Chain-of-Thought verification.
-
----
-
-## ⚡ Verified Benchmark Results
-
-Compiled and executed natively on Windows via `g++ -std=c++14 -O3 -I./include benchmarks/benchmark.cpp`:
-
-* **Throughput:** **15,133 decisions / second**
-* **Average Latency:** **65.47 microseconds (0.065 ms)**
-* **P99 Latency:** **1.00 ms** (Target SLA: $<5\text{ ms}$)
-* **VRAM Footprint:** **~320 MB** (INT4/FP8 sparse activation matrix)
-* **Conformal Coverage:** Validated at **$99.0\%$ ($1 - \alpha$) coverage**
-
----
-
-## 🖥️ Running the Project
-
-### 1. Build and Run the Native C++ Benchmark
-```powershell
-g++ -std=c++14 -O3 -I./include benchmarks/benchmark.cpp -o axiom_benchmark.exe
-.\axiom_benchmark.exe
+```
+Naya/
+├── products/
+│   ├── axiom-core/          # Universal Foundational Decision Engine (C++20 & Python SDK)
+│   ├── axiom-os/            # Autonomous Neuromorphic Desktop Copilot & Agent OS
+│   └── axiom-vision-tensor/ # Sub-16ms Soft-Argmax Visual-Spatial Click Tensor Library
+├── examples/                # Quickstart & Integration Examples (SDK, OpenAI, TradingView)
+├── tests/                   # Monorepo Unified Test Runner & Verification Suite
+├── start_axiom.bat          # 1-Click Desktop Launcher for Axiom OS
+└── .gitignore               # Clean monorepo ignore rules
 ```
 
-### 2. Launch the Visual DAG Studio & Telemetry Inspector
-```powershell
-python ui/server.py
-```
-Open your browser at: **`http://localhost:3000`**
+---
 
-Features included in the UI:
-* **Live Decision Playground:** Test real-time decisions, run auto-stream at 5,000 req/s, and watch fast-path vs. fallback transitions.
-* **Visual DAG Schema Studio:** Drag-and-drop hierarchical nodes with instant export to C++, Pydantic, and Zod.
-* **Microsecond Waterfall Profiler:** Microsecond-by-microsecond timing traces across all 3 layers.
-* **Conformal Calibration Visualizer:** Live reliability diagram and dynamic conformal set gauge.
+## 📦 Products Overview
+
+### 1. [Axiom Core](file:///products/axiom-core/README.md) (`products/axiom-core/`)
+* **Role**: Universal, product-agnostic foundational engine.
+* **Technology**: Cache-aligned C++20 kernel (`alignas(64)`), zero-heap memory arena, Martingale conformal safety bounds ($1 - \alpha$), and Brier/Platt calibration.
+* **Turnkey Enterprise Solutions**:
+  * **FinTech Pre-Trade Risk Firewall** (`>115,000` orders/sec, sub-20µs fat-finger & price collar guard).
+  * **Cybersecurity Packet Guard** (`>100,000` packets/sec line-rate SYN scrub & port filtering).
+  * **Robotics Motor Reflex Arc** (`>50,000` Hz deterministic torque clipping & collision avoidance).
+* **Package**: `axiom_core` Python SDK with typed decision queries (`ask_choice`, `ask_boolean`, `score`, `batch_decide`).
+
+### 2. [Axiom OS](file:///products/axiom-os/README.md) (`products/axiom-os/`)
+* **Role**: Autonomous desktop workstation companion with native Win32 hardware control.
+* **Technology**: Dual-speed System 1 (sub-16ms reflex muscle memory) + System 2 (hierarchical DAG planner & ReAct brain).
+* **Key Capabilities**:
+  * **Win32 Actuator**: Direct typing (`VkKeyScanW`), multi-window orchestration, audio, files, and processes.
+  * **Hardware Hotkey Reflex**: Win32 background message pump binding `Win + Alt + V`.
+  * **Web HUD Studio**: Interactive Vision-Tensor Laboratory with 128-dim canvas visualizer and real-time enterprise benchmarks.
+  * **Mobile Touch Cockpit**: Offline LAN touch controller with QR code pairing.
+  * **Autonomous Sentinels**: CPU thermal governor, port guardian, lock guard, and temp hygiene.
+
+### 3. [Axiom Vision Tensor](file:///products/axiom-vision-tensor/README.md) (`products/axiom-vision-tensor/`)
+* **Role**: Zero-OCR, zero-cloud visual spatial localization library.
+* **Technology**: 2D marginal soft-argmax regression producing 128-dimensional continuous float feature vectors (`64-bin P_X` + `64-bin P_Y`).
+
+---
+
+## ⚡ Quickstart
+
+### 1. Launch Axiom OS
+To start the unified server and open the Web Studio:
+```cmd
+start_axiom.bat
+```
+* **Desktop Studio**: `http://localhost:3000`
+* **Mobile Cockpit**: `http://localhost:3000/mobile`
+* **Vision & Enterprise Studio**: Open the **Vision & Enterprise Studio** tab in the HUD.
+
+### 2. Run the Unified Test Suite
+Run tests across all products with a single command:
+```cmd
+python tests/test_all.py
+```
+
+### 3. Run Individual Product Test Suites
+```cmd
+# Axiom Core
+python -m unittest discover products/axiom-core/tests
+
+# Axiom OS
+python -m unittest discover products/axiom-os/tests
+
+# Axiom Vision Tensor
+python -m unittest discover products/axiom-vision-tensor/tests
+```
+
+---
+
+## 💡 Developer Examples (`examples/`)
+
+* [`examples/python_sdk_example.py`](file:///examples/python_sdk_example.py): Direct Python SDK integration with `AxiomClient`.
+* [`examples/openai_dropin_example.py`](file:///examples/openai_dropin_example.py): OpenAI API drop-in compatibility for existing agent frameworks.
+* [`examples/tradingview_example.py`](file:///examples/tradingview_example.py): Webhook alert ingestion for high-speed algorithmic execution.
+* [`examples/cloud_fallback_demo.py`](file:///examples/cloud_fallback_demo.py): Hybrid fallback routing to cloud LLMs (Claude, GPT-4, OpenRouter).

@@ -34,11 +34,11 @@
     "args": {
       "action": "minimize_all"
     },
-    "success_count": 83,
+    "success_count": 95,
     "failure_count": 0,
-    "avg_latency_us": 91359,
+    "avg_latency_us": 119984,
     "source": "DEFAULT_REFLEX",
-    "last_executed": 1790272869.55064,
+    "last_executed": 1790751020.6665528,
     "confidence": 0.999
   },
   {
@@ -55,11 +55,11 @@
     "args": {
       "action": "mute"
     },
-    "success_count": 115,
+    "success_count": 126,
     "failure_count": 0,
-    "avg_latency_us": 326410,
+    "avg_latency_us": 71714,
     "source": "DEFAULT_REFLEX",
-    "last_executed": 1790272869.5086606,
+    "last_executed": 1790751020.5042436,
     "confidence": 0.999
   },
   {
@@ -237,11 +237,11 @@
     "args": {
       "action": "open_camera"
     },
-    "success_count": 37,
+    "success_count": 41,
     "failure_count": 0,
-    "avg_latency_us": 1282166,
+    "avg_latency_us": 1961176,
     "source": "DEFAULT_REFLEX",
-    "last_executed": 1790272859.2933824,
+    "last_executed": 1790750999.8647854,
     "confidence": 0.9052
   },
   {
@@ -264,12 +264,12 @@
       "timeout_s": 12.0,
       "open_viewer": true
     },
-    "success_count": 31,
+    "success_count": 35,
     "failure_count": 0,
-    "avg_latency_us": 10592917,
+    "avg_latency_us": 15926079,
     "source": "DEFAULT_REFLEX",
-    "last_executed": 1790272868.4129372,
-    "confidence": 0.8815
+    "last_executed": 1790751018.379248,
+    "confidence": 0.8801
   },
   {
     "skill_id": "skill_camera_snapshot",
@@ -311,12 +311,12 @@
     "args": {
       "url": "https://www.youtube.com"
     },
-    "success_count": 52,
+    "success_count": 56,
     "failure_count": 0,
-    "avg_latency_us": 110435,
+    "avg_latency_us": 88339,
     "source": "DEFAULT_REFLEX",
-    "last_executed": 1790272869.2655883,
-    "confidence": 0.9644
+    "last_executed": 1790751020.320082,
+    "confidence": 0.975
   },
   {
     "skill_id": "skill_open_browser",
@@ -358,12 +358,12 @@
       "action": "play_music",
       "query": ""
     },
-    "success_count": 37,
+    "success_count": 41,
     "failure_count": 0,
-    "avg_latency_us": 929067,
+    "avg_latency_us": 1259444,
     "source": "DEFAULT_REFLEX",
-    "last_executed": 1790272869.1811974,
-    "confidence": 0.897
+    "last_executed": 1790751020.185568,
+    "confidence": 0.8978
   },
   {
     "skill_id": "skill_close_notepad",
@@ -830,11 +830,12 @@
       "action": "launch",
       "target": "explorer"
     },
-    "success_count": 1,
+    "success_count": 2,
     "failure_count": 0,
-    "avg_latency_us": 30.0,
+    "avg_latency_us": 120949.9,
     "source": "RLCD_DYNAMIC_SYNTHESIS",
-    "created_at": 1790285653.1562798
+    "created_at": 1790285653.1562798,
+    "last_executed": 1790656967.460226
   },
   {
     "skill_id": "skill_rlcd_1790285692",
@@ -963,5 +964,300 @@
     "source": "RLCD_DYNAMIC_SYNTHESIS",
     "created_at": 1790265810.2833962,
     "last_executed": 1790265828.022033
+  },
+  {
+    "skill_id": "skill_rlcd_1790656819",
+    "name": "Autonomous Plan: open notepad , and write text- NEERAJ U ",
+    "triggers": [
+      "open notepad , and write text- neeraj u r goat."
+    ],
+    "tool": "multi_step",
+    "steps": [
+      {
+        "action": "app_control",
+        "args": {
+          "action": "launch",
+          "target": "notepad"
+        }
+      },
+      {
+        "action": "visual_tensor_click",
+        "args": {
+          "target": "active window",
+          "click": true,
+          "button": "left"
+        }
+      }
+    ],
+    "args": {},
+    "success_count": 1,
+    "failure_count": 0,
+    "avg_latency_us": 60.0,
+    "source": "RLCD_DYNAMIC_SYNTHESIS",
+    "created_at": 1790656819.5257761,
+    "last_executed": 1790656819.5257766
+  },
+  {
+    "skill_id": "skill_rlcd_1790656820",
+    "name": "Autonomous Plan: open notepad , and write text- NEERAJ U ",
+    "triggers": [
+      "open notepad , and write text- neeraj u r goat."
+    ],
+    "tool": "multi_step",
+    "steps": [
+      {
+        "action": "app_control",
+        "args": {
+          "action": "launch",
+          "target": "notepad"
+        }
+      },
+      {
+        "action": "visual_tensor_click",
+        "args": {
+          "target": "active window",
+          "click": true,
+          "button": "left"
+        }
+      }
+    ],
+    "args": {},
+    "success_count": 1,
+    "failure_count": 0,
+    "avg_latency_us": 60.0,
+    "source": "RLCD_DYNAMIC_SYNTHESIS",
+    "created_at": 1790656820.0611196,
+    "last_executed": 1790656820.06112
+  },
+  {
+    "skill_id": "skill_rlcd_1790657039",
+    "name": "Autonomous Plan: open blw in file explorer",
+    "triggers": [
+      "open blw in file explorer"
+    ],
+    "tool": "multi_step",
+    "steps": [
+      {
+        "action": "file_open",
+        "args": {
+          "target_path": "C:\\Users\\YourUsername\\Documents\\example.txt"
+        }
+      },
+      {
+        "action": "browser_open",
+        "args": {
+          "url": "https://www.example.com"
+        }
+      },
+      {
+        "action": "visual_spatial_click",
+        "args": {
+          "target": "example.txt",
+          "click": true,
+          "button": "left"
+        }
+      }
+    ],
+    "args": {},
+    "success_count": 1,
+    "failure_count": 0,
+    "avg_latency_us": 60.0,
+    "source": "RLCD_DYNAMIC_SYNTHESIS",
+    "created_at": 1790657039.1836624,
+    "last_executed": 1790657039.1836627
+  },
+  {
+    "skill_id": "skill_rlcd_1790657039",
+    "name": "Autonomous Plan: open blw in file explorer",
+    "triggers": [
+      "open blw in file explorer"
+    ],
+    "tool": "multi_step",
+    "steps": [
+      {
+        "action": "file_open",
+        "args": {
+          "target_path": "C:\\Users\\YourUsername\\Documents\\example.txt"
+        }
+      },
+      {
+        "action": "browser_open",
+        "args": {
+          "url": "https://www.example.com"
+        }
+      },
+      {
+        "action": "visual_spatial_click",
+        "args": {
+          "target": "example.txt",
+          "click": true,
+          "button": "left"
+        }
+      }
+    ],
+    "args": {},
+    "success_count": 1,
+    "failure_count": 0,
+    "avg_latency_us": 60.0,
+    "source": "RLCD_DYNAMIC_SYNTHESIS",
+    "created_at": 1790657039.188335,
+    "last_executed": 1790657039.1883352
+  },
+  {
+    "skill_id": "skill_rlcd_1790750157",
+    "name": "Autonomous: check system date via powershell",
+    "triggers": [
+      "check system date via powershell"
+    ],
+    "tool": "powershell_exec",
+    "args": {
+      "script": "Get-Date"
+    },
+    "success_count": 2,
+    "failure_count": 0,
+    "avg_latency_us": 30.0,
+    "source": "RLCD_DYNAMIC_SYNTHESIS",
+    "created_at": 1790750157.8257508,
+    "last_executed": 1790750986.9483542
+  },
+  {
+    "skill_id": "skill_rlcd_1790750160",
+    "name": "Autonomous Plan: launch notepad and take a screenshot",
+    "triggers": [
+      "launch notepad and take a screenshot"
+    ],
+    "tool": "multi_step",
+    "steps": [
+      {
+        "action": "app_control",
+        "args": {
+          "action": "launch",
+          "target": "notepad"
+        }
+      },
+      {
+        "action": "system_control",
+        "args": {
+          "action": "screenshot"
+        }
+      }
+    ],
+    "args": {},
+    "success_count": 1,
+    "failure_count": 0,
+    "avg_latency_us": 60.0,
+    "source": "RLCD_DYNAMIC_SYNTHESIS",
+    "created_at": 1790750160.2681036,
+    "last_executed": 1790750160.268104
+  },
+  {
+    "skill_id": "skill_rlcd_1790750217",
+    "name": "Autonomous Plan: clean temp files",
+    "triggers": [
+      "clean temp files"
+    ],
+    "tool": "multi_step",
+    "steps": [
+      {
+        "action": "filesystem_ops",
+        "args": {
+          "action": "clean_temp_files"
+        }
+      },
+      {
+        "action": "system_control",
+        "args": {
+          "action": "free_port",
+          "target": "21"
+        }
+      },
+      {
+        "action": "filesystem_ops",
+        "args": {
+          "action": "search",
+          "target_path": "",
+          "params": {
+            "query": "temp"
+          }
+        }
+      }
+    ],
+    "args": {},
+    "success_count": 4,
+    "failure_count": 0,
+    "avg_latency_us": 701159.7,
+    "source": "RLCD_DYNAMIC_SYNTHESIS",
+    "created_at": 1790750217.2708695,
+    "last_executed": 1790750986.9345303
+  },
+  {
+    "skill_id": "skill_rlcd_1790750217",
+    "name": "Autonomous Plan: clean temp files",
+    "triggers": [
+      "clean temp files"
+    ],
+    "tool": "multi_step",
+    "steps": [
+      {
+        "action": "filesystem_ops",
+        "args": {
+          "action": "clean_temp_files"
+        }
+      },
+      {
+        "action": "system_control",
+        "args": {
+          "action": "free_port",
+          "target": "21"
+        }
+      },
+      {
+        "action": "filesystem_ops",
+        "args": {
+          "action": "search",
+          "target_path": "",
+          "params": {
+            "query": "temp"
+          }
+        }
+      }
+    ],
+    "args": {},
+    "success_count": 1,
+    "failure_count": 0,
+    "avg_latency_us": 60.0,
+    "source": "RLCD_DYNAMIC_SYNTHESIS",
+    "created_at": 1790750217.5396383,
+    "last_executed": 1790750217.5396388
+  },
+  {
+    "skill_id": "skill_rlcd_1790750986",
+    "name": "Autonomous Plan: launch notepad and take a screenshot",
+    "triggers": [
+      "launch notepad and take a screenshot"
+    ],
+    "tool": "multi_step",
+    "steps": [
+      {
+        "action": "app_control",
+        "args": {
+          "action": "launch",
+          "target": "notepad"
+        }
+      },
+      {
+        "action": "system_control",
+        "args": {
+          "action": "screenshot"
+        }
+      }
+    ],
+    "args": {},
+    "success_count": 1,
+    "failure_count": 0,
+    "avg_latency_us": 60.0,
+    "source": "RLCD_DYNAMIC_SYNTHESIS",
+    "created_at": 1790750986.9540577,
+    "last_executed": 1790750986.954058
   }
 ]

@@ -1274,12 +1274,12 @@ def export_distilled_skills_to_cpp(output_path: Optional[str] = None) -> str:
 
     content = "\n".join(lines) + "\n"
 
-    targets = [
-        os.path.join(PROJECT_ROOT, "include", "axiom", "distilled_reflex_leaves.hpp"),
-        os.path.join(PROJECT_ROOT, "products", "axiom-core", "include", "axiom", "distilled_reflex_leaves.hpp")
-    ]
+    targets = []
     if output_path:
         targets.append(output_path)
+    sibling_core = os.path.join(os.path.dirname(PROJECT_ROOT), "axiom-core", "include", "axiom", "distilled_reflex_leaves.hpp")
+    if os.path.exists(sibling_core) and os.environ.get("AXIOM_SYNC_CORE_LEAVES") == "1":
+        targets.append(sibling_core)
 
     for t in set(targets):
         try:

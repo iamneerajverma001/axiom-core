@@ -1,7 +1,11 @@
-# Byte-compiled / optimized / DLL files
+# Byte-compiled / optimized / Python caches
 __pycache__/
 *.py[cod]
 *$py.class
+*.pytest_cache/
+.pytest_cache/
+.coverage
+htmlcov/
 
 # C / C++ intermediate build artifacts
 *.obj
@@ -17,19 +21,17 @@ CMakeCache.txt
 cmake_install.cmake
 Makefile
 
-# Ignore scratch/temporary binaries, keep prebuilt core binaries
+# Binaries: ignore loose exes, keep official core executables in bin/
 *.exe
-!axiom_cli.exe
-!axiom_benchmark.exe
+!products/axiom-core/bin/*.exe
 
-# Testing & Coverage
-.pytest_cache/
-.coverage
-htmlcov/
+# Heavy model weights
+*.pt
 
 # Local backups & runtime data
 .axiom_backups/
 captures/
+products/axiom-os/captures/
 *.log
 
 # Environments

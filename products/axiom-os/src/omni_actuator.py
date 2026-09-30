@@ -1273,7 +1273,13 @@ def get_cached_yolo():
     if _yolo_model_cache is None:
         try:
             from ultralytics import YOLO
-            _yolo_model_cache = YOLO("yolov8n.pt")
+            candidates = [
+                os.path.join(os.path.dirname(__file__), "..", "models", "yolov8n.pt"),
+                os.path.join(os.path.dirname(__file__), "yolov8n.pt"),
+                "yolov8n.pt"
+            ]
+            model_path = next((p for p in candidates if os.path.exists(p)), "yolov8n.pt")
+            _yolo_model_cache = YOLO(model_path)
         except Exception:
             _yolo_model_cache = False
     return _yolo_model_cache if _yolo_model_cache is not False else None

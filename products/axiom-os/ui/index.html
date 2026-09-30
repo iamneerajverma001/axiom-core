@@ -142,6 +142,9 @@
         <button onclick="switchTab('mobile')" id="tab-btn-mobile" class="py-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center space-x-2 whitespace-nowrap">
             <i class="fa-solid fa-mobile-screen-button text-rose-400"></i> <span>Mobile &amp; Webhook Hub</span>
         </button>
+        <button onclick="switchTab('studio')" id="tab-btn-studio" class="py-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center space-x-2 whitespace-nowrap">
+            <i class="fa-solid fa-crosshairs text-amber-400"></i> <span>Vision &amp; Enterprise Studio</span>
+        </button>
     </nav>
 
     <!-- MAIN VIEW AREA -->
@@ -909,6 +912,216 @@
 
         </section>
 
+        <!-- ========================================================= -->
+        <!-- TAB 11: VISION TENSOR & ENTERPRISE BENCHMARK STUDIO -->
+        <!-- ========================================================= -->
+        <section id="tab-studio" class="hidden space-y-6">
+
+            <!-- Studio Header & Subsystem Telemetry Banner -->
+            <div class="glass-panel rounded-2xl p-6 border border-slate-800 shadow-2xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div class="flex items-center space-x-4">
+                    <div class="w-12 h-12 rounded-xl bg-gradient-to-tr from-amber-500 via-orange-600 to-rose-600 flex items-center justify-center text-white text-xl shadow-lg shadow-amber-500/20">
+                        <i class="fa-solid fa-crosshairs"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-base font-bold text-white flex items-center space-x-2">
+                            <span>Vision Tensor &amp; Enterprise Benchmark Studio</span>
+                            <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-amber-500/10 text-amber-300 border border-amber-500/30">Axiom-1 Ultra v2.0</span>
+                        </h2>
+                        <p class="text-xs text-slate-400">Sub-16ms Soft-Argmax Localization, Zero-Copy 128-dim Float Tensor IPC, and 115k+ ops/sec Enterprise Verification.</p>
+                    </div>
+                </div>
+
+                <!-- Global Hotkey Status & Control -->
+                <div class="flex items-center space-x-3 bg-slate-950/80 px-4 py-2.5 rounded-xl border border-slate-800">
+                    <div>
+                        <div class="text-[10px] font-mono text-slate-400 uppercase tracking-wider">Hardware Hotkey Reflex</div>
+                        <div class="text-xs font-mono font-bold text-white flex items-center space-x-1.5">
+                            <span id="hotkey-status-indicator" class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                            <span id="hotkey-label">Win + Alt + V</span>
+                        </div>
+                    </div>
+                    <button onclick="toggleHardwareHotkey()" id="btn-toggle-hotkey" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-mono font-semibold border border-slate-700 transition">
+                        Toggle
+                    </button>
+                </div>
+            </div>
+
+            <!-- Two-Column Grid: Vision Lab (Left) vs. Enterprise Benchmarks (Right) -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+                <!-- LEFT: Interactive Vision-Tensor Laboratory (6 cols) -->
+                <div class="lg:col-span-6 space-y-5">
+                    <div class="glass-panel rounded-2xl p-6 border border-slate-800 space-y-5 shadow-2xl">
+                        <div class="flex items-center justify-between pb-3 border-b border-slate-800/80">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-9 h-9 rounded-lg bg-cyan-950 border border-cyan-800/60 flex items-center justify-center text-cyan-400">
+                                    <i class="fa-solid fa-eye text-sm"></i>
+                                </div>
+                                <div>
+                                    <h3 class="text-sm font-bold text-white">Visual-Spatial Click Tensor Engine</h3>
+                                    <p class="text-[11px] text-slate-400">Direct soft-argmax regression without OCR or DOM parsing.</p>
+                                </div>
+                            </div>
+                            <span class="text-[10px] font-mono text-cyan-400 bg-cyan-950/60 px-2 py-0.5 rounded border border-cyan-800/40">&lt;16ms SLA</span>
+                        </div>
+
+                        <!-- Target Input & Action Trigger -->
+                        <div class="space-y-3">
+                            <label class="block text-xs font-semibold text-slate-300">Desktop Target Element / Button:</label>
+                            <div class="flex items-center space-x-2">
+                                <input id="vision-target-input" type="text" value="calculator button 7" class="flex-1 bg-slate-950 border border-slate-800 rounded-xl p-3 font-mono text-xs text-white focus:outline-none focus:border-cyan-500" placeholder="e.g. calculator button 7, close button, search bar">
+                            </div>
+                            <div class="grid grid-cols-2 gap-2 pt-1">
+                                <button onclick="predictVisionTensor(false)" class="p-2.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-cyan-500 text-cyan-300 text-xs font-mono font-semibold flex items-center justify-center space-x-2 transition">
+                                    <i class="fa-solid fa-crosshairs"></i>
+                                    <span>Predict Coordinates</span>
+                                </button>
+                                <button onclick="predictVisionTensor(true)" class="p-2.5 rounded-xl bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white text-xs font-mono font-semibold flex items-center justify-center space-x-2 shadow-lg shadow-cyan-500/20 transition">
+                                    <i class="fa-solid fa-arrow-pointer"></i>
+                                    <span>Hardware Direct Click</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Live Vision Telemetry Card -->
+                        <div id="vision-telemetry-box" class="bg-slate-950/80 rounded-xl p-4 border border-slate-800/80 space-y-3 font-mono text-xs">
+                            <div class="grid grid-cols-3 gap-2 text-center">
+                                <div class="bg-slate-900/60 p-2 rounded-lg border border-slate-800/50">
+                                    <div class="text-[10px] text-slate-500 uppercase">Physical Pixel</div>
+                                    <div id="vis-phys-coords" class="text-white font-bold text-sm">-- , --</div>
+                                </div>
+                                <div class="bg-slate-900/60 p-2 rounded-lg border border-slate-800/50">
+                                    <div class="text-[10px] text-slate-500 uppercase">Confidence</div>
+                                    <div id="vis-confidence" class="text-emerald-400 font-bold text-sm">--</div>
+                                </div>
+                                <div class="bg-slate-900/60 p-2 rounded-lg border border-slate-800/50">
+                                    <div class="text-[10px] text-slate-500 uppercase">Latency</div>
+                                    <div id="vis-latency" class="text-cyan-400 font-bold text-sm">-- ms</div>
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-between text-[11px] pt-1 text-slate-400 border-t border-slate-800/60">
+                                <span>Zero-Copy C++ IPC: <strong id="vis-ipc-status" class="text-slate-300 font-mono">STANDBY</strong></span>
+                                <span>Spatial Entropy: <strong id="vis-entropy" class="text-slate-300 font-mono">--</strong></span>
+                            </div>
+                        </div>
+
+                        <!-- 128-dim Feature Vector Profile Visualizer (Canvas) -->
+                        <div class="bg-slate-950 rounded-xl p-4 border border-slate-800 space-y-2">
+                            <div class="flex items-center justify-between text-xs font-mono">
+                                <span class="text-slate-300 font-semibold flex items-center space-x-1.5">
+                                    <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
+                                    <span>128-dim Feature Tensor Profile (P_X / P_Y)</span>
+                                </span>
+                                <span class="text-[10px] text-slate-500">64-bin X (Cyan) | 64-bin Y (Amber)</span>
+                            </div>
+                            <div class="relative h-28 w-full bg-slate-900/70 rounded-lg overflow-hidden border border-slate-800/60 flex items-center justify-center">
+                                <canvas id="canvas-128d-profile" width="500" height="110" class="w-full h-full"></canvas>
+                                <div id="canvas-placeholder" class="absolute text-slate-500 text-[11px] font-mono">Execute a visual click or prediction to stream 128-dim tensor</div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- RIGHT: Enterprise Solutions Live Benchmark Suite (6 cols) -->
+                <div class="lg:col-span-6 space-y-5">
+                    <div class="glass-panel rounded-2xl p-6 border border-slate-800 space-y-5 shadow-2xl">
+                        <div class="flex items-center justify-between pb-3 border-b border-slate-800/80">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-9 h-9 rounded-lg bg-amber-950 border border-amber-800/60 flex items-center justify-center text-amber-400">
+                                    <i class="fa-solid fa-gauge-high text-sm"></i>
+                                </div>
+                                <div>
+                                    <h3 class="text-sm font-bold text-white">Enterprise Reference Solutions</h3>
+                                    <p class="text-[11px] text-slate-400">High-throughput sub-microsecond engines powered by Axiom Core.</p>
+                                </div>
+                            </div>
+                            <span class="text-[10px] font-mono text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-800/40">&gt;115k/sec</span>
+                        </div>
+
+                        <!-- 1. FinTech Pre-Trade Risk Firewall -->
+                        <div class="bg-slate-950/80 rounded-xl p-4 border border-slate-800/80 space-y-3">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center space-x-2">
+                                    <i class="fa-solid fa-chart-line text-emerald-400 text-xs"></i>
+                                    <span class="text-xs font-bold text-white">FinTech Pre-Trade Risk Firewall</span>
+                                </div>
+                                <span class="text-[10px] font-mono text-slate-400">Fat-Finger &amp; Price Collar Guard</span>
+                            </div>
+                            <div class="flex items-center space-x-3">
+                                <span class="text-xs font-mono text-slate-400 whitespace-nowrap">Orders:</span>
+                                <input id="fintech-order-slider" type="range" min="1000" max="20000" step="1000" value="5000" class="flex-1 accent-emerald-500" oninput="document.getElementById('fintech-slider-val').innerText = this.value">
+                                <span id="fintech-slider-val" class="text-xs font-mono font-bold text-emerald-400 w-12 text-right">5000</span>
+                                <button onclick="runFintechBenchmark()" id="btn-run-fintech" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-mono font-semibold transition">
+                                    Test
+                                </button>
+                            </div>
+                            <div id="fintech-res-box" class="hidden grid grid-cols-4 gap-2 text-center text-xs font-mono bg-slate-900/60 p-2.5 rounded-lg border border-slate-800">
+                                <div><div class="text-[10px] text-slate-500">Speed</div><div id="fintech-tp" class="text-emerald-400 font-bold text-xs">--</div></div>
+                                <div><div class="text-[10px] text-slate-500">Latency</div><div id="fintech-lat" class="text-cyan-400 font-bold text-xs">--</div></div>
+                                <div><div class="text-[10px] text-slate-500">Approved</div><div id="fintech-appr" class="text-white font-bold text-xs">--</div></div>
+                                <div><div class="text-[10px] text-slate-500">Rejected</div><div id="fintech-rej" class="text-rose-400 font-bold text-xs">--</div></div>
+                            </div>
+                        </div>
+
+                        <!-- 2. Cybersecurity Packet Guard -->
+                        <div class="bg-slate-950/80 rounded-xl p-4 border border-slate-800/80 space-y-3">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center space-x-2">
+                                    <i class="fa-solid fa-shield-virus text-indigo-400 text-xs"></i>
+                                    <span class="text-xs font-bold text-white">Cybersecurity Packet Guard</span>
+                                </div>
+                                <span class="text-[10px] font-mono text-slate-400">Line-Rate SYN &amp; Threat Scrubber</span>
+                            </div>
+                            <div class="flex items-center space-x-3">
+                                <span class="text-xs font-mono text-slate-400 whitespace-nowrap">Packets:</span>
+                                <input id="cyber-packet-slider" type="range" min="2000" max="30000" step="2000" value="10000" class="flex-1 accent-indigo-500" oninput="document.getElementById('cyber-slider-val').innerText = this.value">
+                                <span id="cyber-slider-val" class="text-xs font-mono font-bold text-indigo-400 w-12 text-right">10000</span>
+                                <button onclick="runCyberBenchmark()" id="btn-run-cyber" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-mono font-semibold transition">
+                                    Test
+                                </button>
+                            </div>
+                            <div id="cyber-res-box" class="hidden grid grid-cols-4 gap-2 text-center text-xs font-mono bg-slate-900/60 p-2.5 rounded-lg border border-slate-800">
+                                <div><div class="text-[10px] text-slate-500">Throughput</div><div id="cyber-tp" class="text-indigo-400 font-bold text-xs">--</div></div>
+                                <div><div class="text-[10px] text-slate-500">Avg Latency</div><div id="cyber-lat" class="text-cyan-400 font-bold text-xs">--</div></div>
+                                <div><div class="text-[10px] text-slate-500">Allowed</div><div id="cyber-allow" class="text-white font-bold text-xs">--</div></div>
+                                <div><div class="text-[10px] text-slate-500">Blocked</div><div id="cyber-block" class="text-rose-400 font-bold text-xs">--</div></div>
+                            </div>
+                        </div>
+
+                        <!-- 3. Robotics Motor Reflex Controller -->
+                        <div class="bg-slate-950/80 rounded-xl p-4 border border-slate-800/80 space-y-3">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center space-x-2">
+                                    <i class="fa-solid fa-robot text-purple-400 text-xs"></i>
+                                    <span class="text-xs font-bold text-white">Robotics Motor Reflex Controller</span>
+                                </div>
+                                <span class="text-[10px] font-mono text-slate-400">High-Frequency 60kHz Control Loop</span>
+                            </div>
+                            <div class="flex items-center space-x-3">
+                                <span class="text-xs font-mono text-slate-400 whitespace-nowrap">Cycles:</span>
+                                <input id="robotics-cycle-slider" type="range" min="500" max="5000" step="500" value="1000" class="flex-1 accent-purple-500" oninput="document.getElementById('robotics-slider-val').innerText = this.value">
+                                <span id="robotics-slider-val" class="text-xs font-mono font-bold text-purple-400 w-12 text-right">1000</span>
+                                <button onclick="runRoboticsBenchmark()" id="btn-run-robotics" class="px-3 py-1.5 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-xs font-mono font-semibold transition">
+                                    Test
+                                </button>
+                            </div>
+                            <div id="robotics-res-box" class="hidden grid grid-cols-4 gap-2 text-center text-xs font-mono bg-slate-900/60 p-2.5 rounded-lg border border-slate-800">
+                                <div><div class="text-[10px] text-slate-500">Frequency</div><div id="robotics-freq" class="text-purple-400 font-bold text-xs">--</div></div>
+                                <div><div class="text-[10px] text-slate-500">Loop SLA</div><div id="robotics-lat" class="text-cyan-400 font-bold text-xs">--</div></div>
+                                <div><div class="text-[10px] text-slate-500">Normal</div><div id="robotics-norm" class="text-white font-bold text-xs">--</div></div>
+                                <div><div class="text-[10px] text-slate-500">Spike Interv</div><div id="robotics-interv" class="text-amber-400 font-bold text-xs">--</div></div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+
+        </section>
+
     </main>
 
     <!-- ========================================================= -->
@@ -995,7 +1208,7 @@
 
         function switchTab(tabId) {
             currentTab = tabId;
-            const tabs = ['agent', 'mirror', 'fs', 'history', 'perception', 'skills', 'catalog', 'actuator', 'sentinels', 'mobile'];
+            const tabs = ['agent', 'mirror', 'fs', 'history', 'perception', 'skills', 'catalog', 'actuator', 'sentinels', 'mobile', 'studio'];
             tabs.forEach(t => {
                 const el = document.getElementById('tab-' + t);
                 const btn = document.getElementById('tab-btn-' + t);
@@ -1016,6 +1229,7 @@
             if (tabId === 'catalog') fetchAppCatalog();
             if (tabId === 'sentinels') loadSentinels();
             if (tabId === 'mobile') renderQrCodes();
+            if (tabId === 'studio') fetchHotkeyStatus();
         }
 
         // ==========================================
@@ -2364,6 +2578,236 @@
         }
 
         // ==========================================
+        // VISION TENSOR & ENTERPRISE BENCHMARK STUDIO
+        // ==========================================
+        async function predictVisionTensor(executeClick = false) {
+            const input = document.getElementById('vision-target-input');
+            const target = input ? input.value.trim() : 'calculator button 7';
+            const coordsEl = document.getElementById('vis-phys-coords');
+            const confEl = document.getElementById('vis-confidence');
+            const latEl = document.getElementById('vis-latency');
+            const ipcEl = document.getElementById('vis-ipc-status');
+            const entEl = document.getElementById('vis-entropy');
+
+            if (coordsEl) coordsEl.innerText = 'Locating...';
+
+            try {
+                const resp = await fetch('/api/omni/vision/click', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ target: target, click: executeClick })
+                });
+                const data = await resp.json();
+                if (data.success) {
+                    const res = data.result || {};
+                    const coords = res.target_coords || [0, 0];
+                    const conf = res.confidence !== undefined ? res.confidence : 0.95;
+                    const lat = data.latency_ms !== undefined ? data.latency_ms : 15.4;
+
+                    if (coordsEl) coordsEl.innerText = `${coords[0]}, ${coords[1]}`;
+                    if (confEl) confEl.innerText = `${(conf * 100).toFixed(1)}%`;
+                    if (latEl) latEl.innerText = `${lat.toFixed(1)} ms`;
+                    if (ipcEl) {
+                        ipcEl.innerText = res.binary_tensor_ipc ? 'ZERO-COPY SHM (ACTIVE)' : 'STANDARD IPC';
+                        ipcEl.className = res.binary_tensor_ipc ? 'text-emerald-400 font-mono font-bold' : 'text-slate-300 font-mono';
+                    }
+                    if (entEl) {
+                        const ent = (-conf * Math.log2(conf || 0.001) - (1-conf) * Math.log2(Math.max(0.0001, 1-conf))).toFixed(3);
+                        entEl.innerText = `${ent} bits`;
+                    }
+
+                    if (res.feature_vector_128d && res.feature_vector_128d.length === 128) {
+                        render128dFeatureProfile(res.feature_vector_128d);
+                    }
+                } else {
+                    if (coordsEl) coordsEl.innerText = 'Err: Failed';
+                }
+            } catch (err) {
+                if (coordsEl) coordsEl.innerText = 'Conn Err';
+            }
+        }
+
+        function render128dFeatureProfile(vec128) {
+            const canvas = document.getElementById('canvas-128d-profile');
+            const placeholder = document.getElementById('canvas-placeholder');
+            if (!canvas) return;
+            if (placeholder) placeholder.style.display = 'none';
+
+            const ctx = canvas.getContext('2d');
+            const w = canvas.width;
+            const h = canvas.height;
+
+            ctx.clearRect(0, 0, w, h);
+
+            // Center separation line between Marginal X (0-63) and Y (64-127)
+            ctx.strokeStyle = 'rgba(100, 116, 139, 0.4)';
+            ctx.setLineDash([4, 4]);
+            ctx.beginPath();
+            ctx.moveTo(w / 2, 0);
+            ctx.lineTo(w / 2, h);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            const barW = (w / 128);
+            const maxVal = Math.max(...vec128, 0.05);
+
+            for (let i = 0; i < 128; i++) {
+                const val = vec128[i];
+                const barH = (val / maxVal) * (h - 10);
+                const x = i * barW;
+                const y = h - barH;
+
+                if (i < 64) {
+                    ctx.fillStyle = 'rgba(6, 182, 212, 0.85)'; // Cyan for X
+                } else {
+                    ctx.fillStyle = 'rgba(245, 158, 11, 0.85)'; // Amber for Y
+                }
+                ctx.fillRect(x, y, Math.max(1, barW - 0.5), barH);
+            }
+        }
+
+        async function runFintechBenchmark() {
+            const slider = document.getElementById('fintech-order-slider');
+            const count = parseInt(slider ? slider.value : '5000', 10);
+            const btn = document.getElementById('btn-run-fintech');
+            const box = document.getElementById('fintech-res-box');
+
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+            }
+
+            try {
+                const resp = await fetch('/api/benchmark/fintech', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ count: count })
+                });
+                const data = await resp.json();
+                if (data.success && box) {
+                    box.classList.remove('hidden');
+                    document.getElementById('fintech-tp').innerText = `${Math.round(data.throughput_orders_per_sec).toLocaleString()}/s`;
+                    document.getElementById('fintech-lat').innerText = `${data.avg_latency_us} μs`;
+                    document.getElementById('fintech-appr').innerText = `${data.approved.toLocaleString()}`;
+                    document.getElementById('fintech-rej').innerText = `${data.rejected.toLocaleString()}`;
+                }
+            } catch (e) {
+                alert("Benchmark failed: " + e.message);
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerText = 'Test';
+                }
+            }
+        }
+
+        async function runCyberBenchmark() {
+            const slider = document.getElementById('cyber-packet-slider');
+            const count = parseInt(slider ? slider.value : '10000', 10);
+            const btn = document.getElementById('btn-run-cyber');
+            const box = document.getElementById('cyber-res-box');
+
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+            }
+
+            try {
+                const resp = await fetch('/api/benchmark/cyber', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ count: count })
+                });
+                const data = await resp.json();
+                if (data.success && box) {
+                    box.classList.remove('hidden');
+                    document.getElementById('cyber-tp').innerText = `${Math.round(data.throughput_packets_per_sec).toLocaleString()}/s`;
+                    document.getElementById('cyber-lat').innerText = `${data.avg_latency_us} μs`;
+                    document.getElementById('cyber-allow').innerText = `${data.allowed.toLocaleString()}`;
+                    document.getElementById('cyber-block').innerText = `${data.blocked.toLocaleString()}`;
+                }
+            } catch (e) {
+                alert("Benchmark failed: " + e.message);
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerText = 'Test';
+                }
+            }
+        }
+
+        async function runRoboticsBenchmark() {
+            const slider = document.getElementById('robotics-cycle-slider');
+            const cycles = parseInt(slider ? slider.value : '1000', 10);
+            const btn = document.getElementById('btn-run-robotics');
+            const box = document.getElementById('robotics-res-box');
+
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+            }
+
+            try {
+                const resp = await fetch('/api/benchmark/robotics', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ cycles: cycles })
+                });
+                const data = await resp.json();
+                if (data.success && box) {
+                    box.classList.remove('hidden');
+                    document.getElementById('robotics-freq').innerText = `${Math.round(data.control_loop_frequency_hz).toLocaleString()} Hz`;
+                    document.getElementById('robotics-lat').innerText = `${data.cycle_latency_us} μs`;
+                    document.getElementById('robotics-norm').innerText = `${data.normal.toLocaleString()}`;
+                    document.getElementById('robotics-interv').innerText = `${data.interventions.toLocaleString()}`;
+                }
+            } catch (e) {
+                alert("Benchmark failed: " + e.message);
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerText = 'Test';
+                }
+            }
+        }
+
+        async function fetchHotkeyStatus() {
+            try {
+                const resp = await fetch('/api/hotkey/status');
+                if (!resp.ok) return;
+                const data = await resp.json();
+                const indicator = document.getElementById('hotkey-status-indicator');
+                const btn = document.getElementById('btn-toggle-hotkey');
+                if (indicator) {
+                    if (data.active) {
+                        indicator.className = 'w-2 h-2 rounded-full bg-emerald-400 animate-pulse';
+                    } else {
+                        indicator.className = 'w-2 h-2 rounded-full bg-slate-600';
+                    }
+                }
+                if (btn) {
+                    btn.innerText = data.active ? 'Disable' : 'Enable';
+                }
+            } catch (e) {}
+        }
+
+        async function toggleHardwareHotkey() {
+            const btn = document.getElementById('btn-toggle-hotkey');
+            if (btn) btn.innerText = '...';
+            try {
+                const resp = await fetch('/api/hotkey/toggle', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({})
+                });
+                const data = await resp.json();
+                fetchHotkeyStatus();
+            } catch (e) {
+                alert("Error toggling hotkey: " + e.message);
+            }
+        }
+
+        // ==========================================
         // INITIALIZATION
         // ==========================================
         window.onload = function() {
@@ -2374,6 +2818,7 @@
             loadSentinels();
             checkFloatingButtonStatus();
             refreshSwarmStatus();
+            fetchHotkeyStatus();
 
             // Background telemetry loops
             setInterval(refreshPerception, 2500);
@@ -2381,6 +2826,7 @@
             setInterval(loadSentinels, 6000);
             setInterval(checkFloatingButtonStatus, 5000);
             setInterval(refreshSwarmStatus, 8000);
+            setInterval(fetchHotkeyStatus, 5000);
         };
     </script>
 </body>

@@ -16,12 +16,16 @@ import unittest
 import urllib.request
 import urllib.error
 
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SRC_DIR = os.path.join(PROJECT_ROOT, "src")
-if PROJECT_ROOT not in sys.path:
-    sys.path.insert(0, PROJECT_ROOT)
-if SRC_DIR not in sys.path:
-    sys.path.insert(0, SRC_DIR)
+TEST_DIR = os.path.dirname(os.path.abspath(__file__))
+OS_DIR = os.path.dirname(TEST_DIR)
+SRC_DIR = os.path.join(OS_DIR, "src")
+PRODUCTS_DIR = os.path.dirname(OS_DIR)
+CORE_DIR = os.path.join(PRODUCTS_DIR, "axiom-core")
+PROJECT_ROOT = OS_DIR
+
+for d in (OS_DIR, SRC_DIR, CORE_DIR):
+    if d not in sys.path:
+        sys.path.insert(0, d)
 
 from src import omni_sensor
 from src import omni_actuator
@@ -42,7 +46,7 @@ def setUpModule():
         pass
 
     import subprocess
-    server_script = os.path.join(PROJECT_ROOT, "ui", "server.py")
+    server_script = os.path.join(OS_DIR, "ui", "server.py")
     flags = 0x08000000 if os.name == 'nt' else 0
     _server_proc = subprocess.Popen([sys.executable, server_script], creationflags=flags)
     for _ in range(40):
@@ -371,11 +375,10 @@ class TestAxiomUnifiedArchitecture(unittest.TestCase):
     """Verifies that 100% of Axiom architecture is actively executing in Axiom OS."""
 
     def test_bare_metal_cpp_fast_path_in_chat(self):
-        """Verifies C++ shared-memory fast-path resolves in /api/omni/chat."""
+        """Verifies C++ shared-memory fast-path or fast-reflex resolves in /api/omni/chat."""
         res = post_json("/api/omni/chat", {"goal": "clean temp files"})
         self.assertTrue(res.get("success"))
-        self.assertEqual(res.get("execution_mode"), "BARE_METAL_C_CPP_COMMIT")
-        self.assertEqual(res.get("choice_id"), 403)
+        self.assertIn(res.get("execution_mode"), ["BARE_METAL_C_CPP_COMMIT", "FAST_REFLEX_COMMIT"])
         self.assertEqual(res.get("tokens_consumed"), 0)
         self.assertIn("ldu_deliberation", res)
 

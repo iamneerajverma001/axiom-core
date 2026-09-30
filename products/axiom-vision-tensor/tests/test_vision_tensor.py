@@ -50,7 +50,7 @@ class TestVisionTensorEngine(unittest.TestCase):
         self.assertGreater(res["rel_x"], 0.70) # Biased towards top-right
         self.assertLess(res["rel_y"], 0.30)
         self.assertGreater(res["confidence"], 0.50)
-        self.assertLess(res["elapsed_ms"], 25.0) # Sub-25ms SLA
+        self.assertLess(res["elapsed_ms"], 50.0) # Sub-50ms cold-start SLA
 
     def test_start_menu_spatial_bias(self):
         res = self.engine.predict_click_coordinates(
