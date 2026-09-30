@@ -479,7 +479,10 @@ class VisualSpatialTensorEngine:
         gy = pred["global_phys_y"]
 
         if sys.platform == 'win32' and user32:
-            user32.SetCursorPos(gx, gy)
+            try:
+                user32.SetCursorPos(gx, gy)
+            except Exception:
+                pass
             time.sleep(0.02)
             btn = button.lower().strip()
 

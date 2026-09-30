@@ -32,7 +32,9 @@ Makefile
 .axiom_backups/
 captures/
 products/axiom-os/captures/
+reports/
 *.log
+target_heatmap.png
 
 # Environments
 .env
