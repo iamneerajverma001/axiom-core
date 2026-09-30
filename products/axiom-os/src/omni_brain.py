@@ -576,6 +576,16 @@ def run_autonomous_loop(
     }
 
     # Axiom Latent Deliberation Unit (LDU) Sensor Context Injection
+    if ldu_deliberation is None:
+        try:
+            try:
+                from omni_ldu import ldu
+            except ImportError:
+                from src.omni_ldu import ldu
+            ldu_deliberation = ldu.deliberate(user_goal)
+        except Exception:
+            pass
+
     ldu_context = ""
     if ldu_deliberation and ldu_deliberation.get("success"):
         sec_name = ldu_deliberation.get("best_sector_name", "")
@@ -617,6 +627,20 @@ def run_autonomous_loop(
                 from omni_reflex import distill_skill_from_trace
             d_skill = distill_skill_from_trace(user_goal, execution_trace)
             if d_skill:
+                # Continuous Online Policy Reinforcement & Adaptive Pruning
+                try:
+                    try:
+                        from src.omni_policy_optimizer import policy_optimizer
+                    except ImportError:
+                        from omni_policy_optimizer import policy_optimizer
+                    policy_optimizer.update_policy_online(
+                        skill_id=d_skill.get("skill_id", ""),
+                        success=execution_trace.get("success", True),
+                        latency_ms=execution_trace.get("elapsed_ms", 50.0)
+                    )
+                except Exception:
+                    pass
+
                 return {
                     "type": "skill_distilled",
                     "step": step_num,
