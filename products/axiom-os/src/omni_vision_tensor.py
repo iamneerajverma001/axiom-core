@@ -279,6 +279,91 @@ class VisualSpatialTensorEngine:
         grad_mag = np.sqrt(dx**2 + dy**2)
         return grad_mag
 
+    def find_text_match_ocr(
+        self,
+        pil_image,
+        target_description: str,
+        screen_w: int,
+        screen_h: int
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Uses high-speed native Windows OCR to locate the physical coordinates of target text.
+        Returns normalized and physical coordinates, bounding box, and match score.
+        """
+        if not pil_image:
+            return None
+
+        # Clean query: strip common action verbs and noun suffixes
+        clean_q = target_description.lower().strip()
+        for prefix in ("click on ", "click the ", "click ", "press ", "focus ", "tap on ", "tap "):
+            if clean_q.startswith(prefix):
+                clean_q = clean_q[len(prefix):].strip()
+        for suffix in (" button", " icon", " link", " tab", " option", " menu", " item", " field"):
+            if clean_q.endswith(suffix):
+                clean_q = clean_q[:-len(suffix)].strip()
+
+        if not clean_q or len(clean_q) < 2:
+            return None
+
+        # Reflex keywords that have dedicated geometric priors
+        if any(k in clean_q for k in ("close", "minimize", "maximize", "exit", "quit", "start", "taskbar", "tray", "clock")):
+            return None
+        if any(k in clean_q for k in ("calc", "keypad", "digit", "plus", "minus", "multiply", "divide", "equals")) or clean_q in [str(i) for i in range(10)]:
+            return None
+
+        try:
+            import winocr
+            import asyncio
+
+            async def _do():
+                return await winocr.recognize_pil(pil_image, 'en')
+
+            ocr_res = asyncio.run(_do())
+
+            # 1. Exact or substring match across full lines
+            for l in ocr_res.lines:
+                lt = l.text.strip().lower()
+                if not lt:
+                    continue
+                if clean_q == lt or f" {clean_q} " in f" {lt} " or clean_q in lt:
+                    boxes = [(w.bounding_rect.x, w.bounding_rect.y, w.bounding_rect.width, w.bounding_rect.height) for w in l.words]
+                    if boxes:
+                        lx = min(b[0] for b in boxes)
+                        ly = min(b[1] for b in boxes)
+                        lr = max(b[0] + b[2] for b in boxes)
+                        lb = max(b[1] + b[3] for b in boxes)
+                        cx = (lx + lr) / 2.0
+                        cy = (ly + lb) / 2.0
+                        return {
+                            "norm_cx": max(0.0, min(1.0, cx / max(1, screen_w))),
+                            "norm_cy": max(0.0, min(1.0, cy / max(1, screen_h))),
+                            "phys_cx": int(round(cx)),
+                            "phys_cy": int(round(cy)),
+                            "matched_text": l.text.strip(),
+                            "query": clean_q
+                        }
+
+            # 2. Word-level match
+            for l in ocr_res.lines:
+                for w in l.words:
+                    wt = w.text.strip().lower()
+                    if not wt:
+                        continue
+                    if clean_q == wt or clean_q in wt or wt in clean_q:
+                        cx = w.bounding_rect.x + w.bounding_rect.width / 2.0
+                        cy = w.bounding_rect.y + w.bounding_rect.height / 2.0
+                        return {
+                            "norm_cx": max(0.0, min(1.0, cx / max(1, screen_w))),
+                            "norm_cy": max(0.0, min(1.0, cy / max(1, screen_h))),
+                            "phys_cx": int(round(cx)),
+                            "phys_cy": int(round(cy)),
+                            "matched_text": w.text.strip(),
+                            "query": clean_q
+                        }
+        except Exception:
+            pass
+        return None
+
     def compute_activation_map(
         self,
         pil_image,
@@ -287,8 +372,8 @@ class VisualSpatialTensorEngine:
         screen_h: int = 768
     ) -> np.ndarray:
         """
-        Builds the 2D spatial activation map Z incorporating UI edge gradients
-        and geometric priors grounded in active Win32 window topology.
+        Builds the 2D spatial activation map Z incorporating UI edge gradients,
+        real-time OCR semantic text grounding, and geometric Win32 window priors.
         """
         desc = target_description.lower().strip()
         tensor = self.image_to_luminance_tensor(pil_image)
@@ -304,6 +389,18 @@ class VisualSpatialTensorEngine:
 
         in_win_mask = (self.U_grid >= w_left) & (self.U_grid <= w_right) & (self.V_grid >= w_top) & (self.V_grid <= w_bottom)
         Z[in_win_mask] *= 1.5  # Saliency focus bonus inside active window
+
+        # ----------------------------------------------------------------------
+        # 0. NATIVE ON-SCREEN TEXT & ELEMENT GROUNDING (WINOCR)
+        # ----------------------------------------------------------------------
+        ocr_match = self.find_text_match_ocr(pil_image, desc, screen_w, screen_h)
+        if ocr_match:
+            norm_cx = ocr_match["norm_cx"]
+            norm_cy = ocr_match["norm_cy"]
+            # Inject sharp, high-confidence attractor Gaussian peak on the text location
+            text_bias = np.exp(-((self.U_grid - norm_cx)**2 + (self.V_grid - norm_cy)**2) / 0.008)
+            Z += text_bias * 9.5
+            return Z
 
         # ----------------------------------------------------------------------
         # 1. WINDOW CHROME & FRAME CONTROLS

@@ -34,11 +34,11 @@
     "args": {
       "action": "minimize_all"
     },
-    "success_count": 95,
+    "success_count": 99,
     "failure_count": 0,
-    "avg_latency_us": 119984,
+    "avg_latency_us": 123676,
     "source": "DEFAULT_REFLEX",
-    "last_executed": 1790751020.6665528,
+    "last_executed": 1790788618.4124963,
     "confidence": 0.999
   },
   {
@@ -55,11 +55,11 @@
     "args": {
       "action": "mute"
     },
-    "success_count": 126,
+    "success_count": 132,
     "failure_count": 0,
-    "avg_latency_us": 71714,
+    "avg_latency_us": 40990,
     "source": "DEFAULT_REFLEX",
-    "last_executed": 1790751020.5042436,
+    "last_executed": 1790788618.2820673,
     "confidence": 0.999
   },
   {
@@ -237,12 +237,12 @@
     "args": {
       "action": "open_camera"
     },
-    "success_count": 41,
+    "success_count": 43,
     "failure_count": 0,
-    "avg_latency_us": 1961176,
+    "avg_latency_us": 1686691,
     "source": "DEFAULT_REFLEX",
-    "last_executed": 1790750999.8647854,
-    "confidence": 0.9052
+    "last_executed": 1790788609.8431547,
+    "confidence": 0.9058
   },
   {
     "skill_id": "skill_camera_capture_person",
@@ -264,12 +264,12 @@
       "timeout_s": 12.0,
       "open_viewer": true
     },
-    "success_count": 35,
+    "success_count": 37,
     "failure_count": 0,
-    "avg_latency_us": 15926079,
+    "avg_latency_us": 12876758,
     "source": "DEFAULT_REFLEX",
-    "last_executed": 1790751018.379248,
-    "confidence": 0.8801
+    "last_executed": 1790788616.2786698,
+    "confidence": 0.8795
   },
   {
     "skill_id": "skill_camera_snapshot",
@@ -311,12 +311,12 @@
     "args": {
       "url": "https://www.youtube.com"
     },
-    "success_count": 56,
+    "success_count": 58,
     "failure_count": 0,
-    "avg_latency_us": 88339,
+    "avg_latency_us": 70124,
     "source": "DEFAULT_REFLEX",
-    "last_executed": 1790751020.320082,
-    "confidence": 0.975
+    "last_executed": 1790788618.18162,
+    "confidence": 0.9817
   },
   {
     "skill_id": "skill_open_browser",
@@ -358,12 +358,12 @@
       "action": "play_music",
       "query": ""
     },
-    "success_count": 41,
+    "success_count": 43,
     "failure_count": 0,
-    "avg_latency_us": 1259444,
+    "avg_latency_us": 1391606,
     "source": "DEFAULT_REFLEX",
-    "last_executed": 1790751020.185568,
-    "confidence": 0.8978
+    "last_executed": 1790788618.0799417,
+    "confidence": 0.898
   },
   {
     "skill_id": "skill_close_notepad",
@@ -1104,23 +1104,6 @@
     "last_executed": 1790657039.1883352
   },
   {
-    "skill_id": "skill_rlcd_1790750157",
-    "name": "Autonomous: check system date via powershell",
-    "triggers": [
-      "check system date via powershell"
-    ],
-    "tool": "powershell_exec",
-    "args": {
-      "script": "Get-Date"
-    },
-    "success_count": 2,
-    "failure_count": 0,
-    "avg_latency_us": 30.0,
-    "source": "RLCD_DYNAMIC_SYNTHESIS",
-    "created_at": 1790750157.8257508,
-    "last_executed": 1790750986.9483542
-  },
-  {
     "skill_id": "skill_rlcd_1790750160",
     "name": "Autonomous Plan: launch notepad and take a screenshot",
     "triggers": [
@@ -1183,12 +1166,12 @@
       }
     ],
     "args": {},
-    "success_count": 4,
+    "success_count": 5,
     "failure_count": 0,
-    "avg_latency_us": 701159.7,
+    "avg_latency_us": 857134.3,
     "source": "RLCD_DYNAMIC_SYNTHESIS",
     "created_at": 1790750217.2708695,
-    "last_executed": 1790750986.9345303
+    "last_executed": 1790788593.9658356
   },
   {
     "skill_id": "skill_rlcd_1790750217",

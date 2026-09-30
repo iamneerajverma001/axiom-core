@@ -37,9 +37,10 @@ AVAILABLE TOOLS:
   Direct sub-16ms multimodal visual-spatial click via multi-scale soft-argmax and two-stage patch refinement,
   verified by zero-copy 128-dim binary float tensor IPC reflex. Locates and clicks any UI element, button, or dialog.
 - visual_spatial_click(target="...", click=True, button="left"|"right"|"double", verify=True):
-  Direct sub-16ms multimodal visual-spatial click via multi-scale soft-argmax and two-stage patch refinement.
-  Directly locates and clicks physical desktop buttons, dialogs, icons, canvas controls, or calculator buttons without needing DOM or OCR!
-  Example: visual_spatial_click(target="calculator button 7"), visual_spatial_click(target="close button"), visual_spatial_click(target="search bar")
+  Sub-16ms multimodal visual click powered by hybrid Soft-Argmax tensor and native WinOCR grounding.
+  Directly locates and clicks ANY visible button, text label (e.g. "Google", "Submit", "Settings", "Downloads", "File"), dialog, or geometric reflex control ("close button", "calculator button 7").
+- click_text(target="...", verify=True):
+  Direct semantic text grounding click tool. Scans the screen, locates the physical bounding box of the specified word or phrase, and clicks its center.
 - visual_click_sequence(targets=["target1", "target2", ...], delay_between_s=0.15):
   Executes an ordered pipeline of direct visual clicks across the screen with settling probes.
   Example: visual_click_sequence(targets=["calculator button 7", "calculator button plus", "calculator button 8", "calculator button equals"])
@@ -102,13 +103,35 @@ def sanitize_obs_for_llm(obs: dict, max_len: int = 1200) -> dict:
             clean[key] = f"{head}\n\n... [{len(val) - 1050} characters truncated for LLM reasoning context] ...\n\n{tail}"
     return clean
 
+def get_screen_base64(max_dim: int = 1024, quality: int = 70) -> str:
+    """Captures and downsamples desktop screen to compact JPEG base64 string for VLM perception."""
+    try:
+        try:
+            from omni_vision_tensor import capture_screen_fast
+        except ImportError:
+            from src.omni_vision_tensor import capture_screen_fast
+        import io
+        import base64
+        img, w, h = capture_screen_fast()
+        scale = min(1.0, max_dim / max(w, h))
+        if scale < 1.0:
+            new_w = int(w * scale)
+            new_h = int(h * scale)
+            img = img.resize((new_w, new_h))
+        buf = io.BytesIO()
+        img.convert('RGB').save(buf, format='JPEG', quality=quality)
+        return base64.b64encode(buf.getvalue()).decode('utf-8')
+    except Exception:
+        return ""
+
 def query_llm_json(
-    messages: List[Dict[str, str]],
+    messages: List[Dict[str, Any]],
     provider: str = "ollama",
     model: str = "qwen2.5-coder:1.5b",
     api_key: str = "",
     base_url: str = "https://openrouter.ai/api/v1",
-    temperature: float = 0.2
+    temperature: float = 0.2,
+    image_b64: Optional[str] = None
 ) -> Dict[str, Any]:
     """Queries either local Ollama or Cloud LLM and parses the resulting JSON decision."""
     # 1. Cloud Provider (OpenRouter / Custom / OpenAI-compatible)
@@ -123,9 +146,21 @@ def query_llm_json(
         cloud_model = model or "anthropic/claude-3.5-sonnet"
         if cloud_model == "qwen2.5-coder:1.5b":
             cloud_model = "anthropic/claude-3.5-sonnet"
+
+        formatted_messages = []
+        for idx, m in enumerate(messages):
+            if idx == len(messages) - 1 and m.get("role") == "user" and image_b64:
+                user_content = [
+                    {"type": "text", "text": str(m["content"])},
+                    {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{image_b64}"}}
+                ]
+                formatted_messages.append({"role": "user", "content": user_content})
+            else:
+                formatted_messages.append(m)
+
         payload = {
             "model": cloud_model,
-            "messages": messages,
+            "messages": formatted_messages,
             "temperature": temperature,
             "response_format": {"type": "json_object"}
         }
@@ -138,7 +173,12 @@ def query_llm_json(
     # 2. Local Ollama Provider
     else:
         url = "http://127.0.0.1:11434/api/chat"
-        ollama_messages = [{"role": m["role"], "content": m["content"]} for m in messages]
+        ollama_messages = []
+        for idx, m in enumerate(messages):
+            entry = {"role": m["role"], "content": m["content"]}
+            if idx == len(messages) - 1 and m.get("role") == "user" and image_b64:
+                entry["images"] = [image_b64]
+            ollama_messages.append(entry)
         
         ollama_model = model
         if not ollama_model or "/" in ollama_model or "claude" in ollama_model or "gpt" in ollama_model:
@@ -602,13 +642,18 @@ def run_autonomous_loop(
             "timestamp": time.time()
         }
 
+        # Capture live screen for multimodal vision models
+        is_vision_model = any(k in (model or "").lower() for k in ("claude", "gpt-4", "vl", "vision", "gemini", "llava"))
+        img_b64 = get_screen_base64() if (is_vision_model and step_count <= 3) else None
+
         try:
             decision = query_llm_json(
                 messages=messages,
                 provider=provider,
                 model=model,
                 api_key=api_key,
-                base_url=base_url
+                base_url=base_url,
+                image_b64=img_b64
             )
         except Exception as e:
             # Resilient Fallback: If we already executed action steps that succeeded, conclude with success!
@@ -719,7 +764,15 @@ def run_autonomous_loop(
                         thought = (thought + " " if thought else "") + f"[Omni-Brain Guard: Re-routed entity launch '{t_str}' to grounded web_search]"
 
         # Guard 4: Direct Vision-Tensor Click Prior for Button/UI directives
-        if any(k in goal_lower for k in ("click button", "click 7", "click plus", "click equals", "click close", "click search")) and action not in ("visual_spatial_click", "visual_click_sequence"):
+        active_m = plan.get_active_milestone()
+        target_context = (active_m.description if active_m else user_goal)
+        target_context_lower = target_context.lower()
+
+        click_prefixes = ("click on the ", "click on ", "click the ", "click ", "tap on the ", "tap on ", "tap ", "press the ", "press ")
+        is_click_directive = any(target_context_lower.startswith(p) or f" {p}" in target_context_lower for p in ("click on ", "click the ", "click ", "tap on ", "press ")) or any(k in goal_lower for k in ("click button", "click 7", "click plus", "click equals", "click close", "click search"))
+        is_photo_intent = any(p in goal_lower for p in ("click photo", "click a photo", "click picture", "take picture", "take photo", "capture photo"))
+
+        if is_click_directive and not is_photo_intent and action not in ("visual_spatial_click", "visual_click_sequence", "click_text"):
             if "calc" in goal_lower or "calculator" in goal_lower:
                 # If app not opened yet, allow app_control launch first
                 if not any(s.get("action") == "app_control" for s in execution_trace["steps"]):
@@ -728,12 +781,29 @@ def run_autonomous_loop(
                 else:
                     action = "visual_spatial_click"
                     target_arg = "calculator button"
-                    for tok in ("7", "8", "9", "+", "-", "*", "/", "=", "plus", "minus", "equals", "clear"):
+                    for tok in ("0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "+", "-", "*", "/", "=", "plus", "minus", "equals", "clear"):
                         if tok in goal_lower:
                             target_arg = f"calculator button {tok}"
                             break
                     args = {"target": target_arg, "click": True, "verify": True}
                     thought = (thought + " " if thought else "") + f"[Omni-Brain Guard: Grounded UI interaction to Direct Vision-Tensor '{target_arg}']"
+            else:
+                # Extract target UI element from directive
+                extracted_target = target_context.strip()
+                for prefix in click_prefixes:
+                    idx = extracted_target.lower().find(prefix)
+                    if idx != -1:
+                        extracted_target = extracted_target[idx + len(prefix):].strip()
+                        break
+                extracted_target = extracted_target.rstrip(".!?,")
+                for suffix in (" button", " icon", " tab", " link", " menu"):
+                    if extracted_target.lower().endswith(suffix):
+                        extracted_target = extracted_target[:-len(suffix)].strip()
+
+                if extracted_target:
+                    action = "visual_spatial_click"
+                    args = {"target": extracted_target, "click": True, "verify": True}
+                    thought = (thought + " " if thought else "") + f"[Omni-Brain Guard: Grounded UI click to Visual-Spatial Tensor '{extracted_target}']"
 
         # ----------------------------------------------------------------------
         # ACTION EXECUTION ON HARDWARE

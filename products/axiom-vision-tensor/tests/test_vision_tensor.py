@@ -131,6 +131,22 @@ class TestVisionTensorEngine(unittest.TestCase):
         self.assertIn("feature_vector_128d", res)
         self.assertEqual(len(res["feature_vector_128d"]), 128)
 
+    def test_ocr_semantic_text_grounding(self):
+        from PIL import ImageDraw
+        test_canvas = Image.new("RGB", (1000, 600), color="#1e1e2e")
+        draw = ImageDraw.Draw(test_canvas)
+        draw.rectangle([(700, 300), (850, 360)], fill="#a6e3a1")
+        draw.text((720, 320), "Submit Order", fill="black")
+
+        res = self.engine.predict_click_coordinates(test_canvas, "Submit Order", screen_w=1000, screen_h=600)
+        self.assertTrue(res["success"])
+        # Coordinates should land squarely inside the button rectangle [700..850, 300..360]
+        self.assertGreaterEqual(res["phys_x"], 680)
+        self.assertLessEqual(res["phys_x"], 870)
+        self.assertGreaterEqual(res["phys_y"], 280)
+        self.assertLessEqual(res["phys_y"], 380)
+        self.assertGreater(res["confidence"], 0.85)
+
 if __name__ == "__main__":
     unittest.main()
 

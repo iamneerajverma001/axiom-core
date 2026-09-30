@@ -261,10 +261,33 @@ def get_clipboard_text(max_len: int = 500) -> str:
         pass
     return ""
 
-def get_comprehensive_pc_state() -> dict:
+def get_visible_ui_labels(max_elements: int = 12) -> List[str]:
+    """Scans desktop with native OCR and returns prominent visible text labels."""
+    try:
+        try:
+            from omni_actuator import screen_ocr
+        except ImportError:
+            from src.omni_actuator import screen_ocr
+        res = screen_ocr(action="read_screen")
+        if res.get("success") and res.get("elements"):
+            seen = set()
+            labels = []
+            for el in res["elements"]:
+                txt = el["text"].strip()
+                if len(txt) >= 2 and txt.lower() not in seen:
+                    seen.add(txt.lower())
+                    labels.append(txt)
+                if len(labels) >= max_elements:
+                    break
+            return labels
+    except Exception:
+        pass
+    return []
+
+def get_comprehensive_pc_state(include_visual_labels: bool = True) -> dict:
     """
-    Returns an omnipresent 360-degree snapshot of the entire PC environment
-    ready to feed directly into the agent's context.
+    Returns an omnipresent 360-degree snapshot of the entire PC environment,
+    including live on-screen text elements, ready to feed directly into the agent's context.
     """
     fg = get_foreground_window_info()
     windows = get_visible_windows(8)
@@ -272,6 +295,7 @@ def get_comprehensive_pc_state() -> dict:
     telemetry = get_system_hardware_telemetry()
     ports = get_active_listening_ports()
     clip = get_clipboard_text(200)
+    ui_labels = get_visible_ui_labels() if include_visual_labels else []
 
     # Format human-readable perception string for LLM grounding
     win_list_str = ", ".join([f"'{w['title']}' ({w['process']})" for w in windows]) or "No active user windows"
@@ -285,11 +309,13 @@ def get_comprehensive_pc_state() -> dict:
         media_str = "Chrome is running (browser active)"
 
     clip_str = f"- Clipboard Preview: '{clip}'" if clip else "- Clipboard: (Empty)"
+    ui_str = f"- Visible Screen UI Text: {', '.join([repr(l) for l in ui_labels])}\n" if ui_labels else ""
 
     prompt_context = (
         f"[CURRENT PC PERCEPTION SNAPSHOT]\n"
         f"- Foreground Active Window: '{fg['title']}' (Process: {fg['process']}, PID: {fg['pid']})\n"
         f"- Visible Windows: {win_list_str}\n"
+        f"{ui_str}"
         f"- Media Playback State: {media_str}\n"
         f"- System Health: CPU {telemetry['cpu_percent']}%, RAM {telemetry['ram_used_gb']}/{telemetry['ram_total_gb']} GB ({telemetry['ram_percent']}%), Battery {telemetry['battery_percent']}% ({'AC Charging' if telemetry['is_charging'] else 'Battery'})\n"
         f"- Active Listening Ports: {ports[:10]}\n"
@@ -300,6 +326,7 @@ def get_comprehensive_pc_state() -> dict:
     return {
         "foreground_window": fg,
         "visible_windows": windows,
+        "visible_ui_labels": ui_labels,
         "media_session": media,
         "telemetry": telemetry,
         "active_ports": ports,

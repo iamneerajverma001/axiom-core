@@ -1524,11 +1524,92 @@ def capture_screen_pixels(save_path: str = "") -> tuple:
     img.save(abs_path)
     return img, abs_path, w, h
 
-def screen_ocr(action: str = "read_screen", search_term: str = "", save_path: str = "", open_viewer: bool = False) -> dict:
+def find_text_coordinates_on_screen(query: str, img: Optional[Any] = None) -> Optional[Dict[str, Any]]:
     """
-    Visual Desktop Screen OCR & Inspection Tool:
+    Fast native OCR scan to locate physical pixel coordinates (cx, cy) and bounding box
+    of any visible text phrase or word on the Windows desktop.
+    """
+    if not query or not query.strip():
+        return None
+    try:
+        import winocr
+        import asyncio
+
+        if img is None:
+            img, _, w, h = capture_screen_pixels()
+        else:
+            w, h = img.size
+
+        async def _do():
+            return await winocr.recognize_pil(img, 'en')
+
+        ocr_res = asyncio.run(_do())
+        q = query.lower().strip()
+
+        # 1. Line-level phrase matching
+        for l in ocr_res.lines:
+            lt = l.text.strip()
+            if not lt:
+                continue
+            if q == lt.lower() or f" {q} " in f" {lt.lower()} " or q in lt.lower():
+                boxes = [(w_it.bounding_rect.x, w_it.bounding_rect.y, w_it.bounding_rect.width, w_it.bounding_rect.height) for w_it in l.words]
+                if boxes:
+                    lx = min(b[0] for b in boxes)
+                    ly = min(b[1] for b in boxes)
+                    lr = max(b[0] + b[2] for b in boxes)
+                    lb = max(b[1] + b[3] for b in boxes)
+                    cx = int(round((lx + lr) / 2.0))
+                    cy = int(round((ly + lb) / 2.0))
+                    return {
+                        "matched_text": lt,
+                        "query": query,
+                        "cx": cx,
+                        "cy": cy,
+                        "x": int(round(lx)),
+                        "y": int(round(ly)),
+                        "width": int(round(lr - lx)),
+                        "height": int(round(lb - ly)),
+                        "confidence": 0.98 if q == lt.lower() else 0.92,
+                        "screen_w": w,
+                        "screen_h": h
+                    }
+
+        # 2. Word-level matching
+        for l in ocr_res.lines:
+            for w_it in l.words:
+                wt = w_it.text.strip()
+                if not wt:
+                    continue
+                if q == wt.lower() or q in wt.lower() or wt.lower() in q:
+                    bx = float(w_it.bounding_rect.x)
+                    by = float(w_it.bounding_rect.y)
+                    bw = float(w_it.bounding_rect.width)
+                    bh = float(w_it.bounding_rect.height)
+                    cx = int(round(bx + bw / 2.0))
+                    cy = int(round(by + bh / 2.0))
+                    return {
+                        "matched_text": wt,
+                        "query": query,
+                        "cx": cx,
+                        "cy": cy,
+                        "x": int(round(bx)),
+                        "y": int(round(by)),
+                        "width": int(round(bw)),
+                        "height": int(round(bh)),
+                        "confidence": 0.95 if q == wt.lower() else 0.85,
+                        "screen_w": w,
+                        "screen_h": h
+                    }
+    except Exception:
+        pass
+    return None
+
+def screen_ocr(action: str = "read_screen", search_term: str = "", save_path: str = "", open_viewer: bool = False, click: bool = False) -> dict:
+    """
+    Visual Desktop Screen OCR & Grounded Actuation Tool:
     - 'read_screen': Captures current interactive display and extracts all visible text via Windows Media OCR.
     - 'search_text': Checks if a specific string or keyword appears on the user's active monitor.
+    - 'click_text': Locates the physical bounding box of a visible word or phrase and clicks its center.
     """
     try:
         import winocr
@@ -1539,7 +1620,53 @@ def screen_ocr(action: str = "read_screen", search_term: str = "", save_path: st
             return await winocr.recognize_pil(img, 'en')
 
         ocr_res = asyncio.run(_do_ocr())
-        detected_lines = [l.text.strip() for l in ocr_res.lines if l.text.strip()]
+
+        detected_words = []
+        detected_elements = []
+        detected_lines = []
+
+        for l in ocr_res.lines:
+            l_text = l.text.strip()
+            if not l_text:
+                continue
+            detected_lines.append(l_text)
+
+            line_boxes = []
+            for w_item in l.words:
+                wt = w_item.text.strip()
+                if not wt:
+                    continue
+                bx = float(w_item.bounding_rect.x)
+                by = float(w_item.bounding_rect.y)
+                bw = float(w_item.bounding_rect.width)
+                bh = float(w_item.bounding_rect.height)
+                word_entry = {
+                    "text": wt,
+                    "x": int(round(bx)),
+                    "y": int(round(by)),
+                    "width": int(round(bw)),
+                    "height": int(round(bh)),
+                    "cx": int(round(bx + bw / 2.0)),
+                    "cy": int(round(by + bh / 2.0))
+                }
+                detected_words.append(word_entry)
+                line_boxes.append((bx, by, bw, bh))
+
+            if line_boxes:
+                lx = min(b[0] for b in line_boxes)
+                ly = min(b[1] for b in line_boxes)
+                lr = max(b[0] + b[2] for b in line_boxes)
+                lb = max(b[1] + b[3] for b in line_boxes)
+                detected_elements.append({
+                    "text": l_text,
+                    "x": int(round(lx)),
+                    "y": int(round(ly)),
+                    "width": int(round(lr - lx)),
+                    "height": int(round(lb - ly)),
+                    "cx": int(round((lx + lr) / 2.0)),
+                    "cy": int(round((ly + lb) / 2.0))
+                })
+
         full_text = "\n".join(detected_lines)
 
         if open_viewer:
@@ -1552,18 +1679,64 @@ def screen_ocr(action: str = "read_screen", search_term: str = "", save_path: st
         term_clean = search_term.lower().strip()
         term_found = False
         matching_lines = []
+        target_match = None
+
         if term_clean:
-            for l in detected_lines:
-                if term_clean in l.lower():
+            # 1. Match full element phrases
+            for el in detected_elements:
+                if term_clean == el["text"].lower() or f" {term_clean} " in f" {el['text'].lower()} " or term_clean in el["text"].lower():
                     term_found = True
-                    matching_lines.append(l)
+                    matching_lines.append(el["text"])
+                    if not target_match:
+                        target_match = el
+
+            # 2. Match individual words
+            if not target_match:
+                for wd in detected_words:
+                    if term_clean == wd["text"].lower() or term_clean in wd["text"].lower() or wd["text"].lower() in term_clean:
+                        term_found = True
+                        if wd["text"] not in matching_lines:
+                            matching_lines.append(wd["text"])
+                        if not target_match:
+                            target_match = wd
+
+        # If action is click_text or click flag is True
+        click_info = {}
+        act_clean = action.lower().strip()
+        if act_clean in ("click_text", "click", "find_and_click") or click:
+            if target_match and sys.platform == 'win32' and user32:
+                tcx = target_match["cx"]
+                tcy = target_match["cy"]
+                try:
+                    user32.SetCursorPos(tcx, tcy)
+                    time.sleep(0.02)
+                    user32.mouse_event(0x0002, 0, 0, 0, 0)
+                    user32.mouse_event(0x0004, 0, 0, 0, 0)
+                    click_info = {
+                        "clicked": True,
+                        "click_x": tcx,
+                        "click_y": tcy,
+                        "clicked_target": target_match["text"],
+                        "target_bounds": {
+                            "x": target_match["x"],
+                            "y": target_match["y"],
+                            "width": target_match["width"],
+                            "height": target_match["height"]
+                        }
+                    }
+                except Exception as e:
+                    click_info = {"clicked": False, "error": str(e)}
+            else:
+                click_info = {"clicked": False, "reason": "Target text not found on screen" if not target_match else "OS click unavailable"}
 
         preview = full_text[:400] + ("..." if len(full_text) > 400 else "")
-        msg = f"Screen OCR captured {len(detected_lines)} text lines ({w}x{h})."
+        msg = f"Screen OCR captured {len(detected_lines)} text lines, {len(detected_words)} words ({w}x{h})."
         if term_clean:
             msg += f" Search for '{search_term}': {'FOUND' if term_found else 'NOT FOUND'}."
+        if click_info.get("clicked"):
+            msg += f" Physically clicked '{click_info['clicked_target']}' at ({click_info['click_x']}, {click_info['click_y']})."
 
-        return {
+        res = {
             "success": True,
             "action": action,
             "saved_path": abs_path,
@@ -1571,14 +1744,18 @@ def screen_ocr(action: str = "read_screen", search_term: str = "", save_path: st
             "file_size_bytes": file_size,
             "resolution": f"{w}x{h}",
             "lines_count": len(detected_lines),
+            "words_count": len(detected_words),
             "lines": detected_lines,
             "text": full_text,
             "text_preview": preview,
             "search_term": search_term,
             "term_found": term_found,
             "matching_lines": matching_lines,
+            "elements": detected_elements[:50],
             "message": msg
         }
+        res.update(click_info)
+        return res
     except Exception as ex:
         return {"success": False, "error": f"Screen OCR failure: {ex}"}
 
@@ -1955,12 +2132,15 @@ def execute_tool(tool_name: str, **kwargs) -> dict:
     except Exception:
         pass
 
-    if t_clean in ("screen_ocr", "ocr", "read_screen", "screen_text", "desktop_ocr"):
+    if t_clean in ("screen_ocr", "ocr", "read_screen", "screen_text", "desktop_ocr", "click_text", "ocr_click", "find_and_click"):
+        is_click = t_clean in ("click_text", "ocr_click", "find_and_click") or bool(kwargs.get("click", False))
+        act = "click_text" if is_click else kwargs.get("action", "read_screen")
         return screen_ocr(
-            action=kwargs.get("action", "read_screen"),
-            search_term=kwargs.get("search_term", kwargs.get("query", kwargs.get("term", ""))),
+            action=act,
+            search_term=kwargs.get("search_term", kwargs.get("query", kwargs.get("term", kwargs.get("target", "")))),
             save_path=kwargs.get("save_path", kwargs.get("path", "")),
-            open_viewer=bool(kwargs.get("open_viewer", False))
+            open_viewer=bool(kwargs.get("open_viewer", False)),
+            click=is_click
         )
     elif t_clean in ("camera_vision", "camera", "webcam", "vision", "cv"):
         return camera_vision(
