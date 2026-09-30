@@ -111,3 +111,31 @@ class PreTradeRiskFirewall:
         res = self.safety_gate.update(loss_magnitude)
         if res["safety_barrier_breached"]:
             self.circuit_tripped = True
+
+    def evaluate_fix_message(self, raw_fix_msg: str | bytes, mid_market_price: float) -> Dict[str, Any]:
+        """
+        Ultra-low-latency direct FIX 4.2/4.4 wire evaluation in < 20 microseconds.
+        Decodes SOH/Pipe delimited byte streams directly into pre-trade risk controls.
+        """
+        t0 = time.perf_counter()
+        from axiom_core.wire_protocol import FixOrder
+        fix_order = FixOrder.parse(raw_fix_msg)
+        if not fix_order.is_valid:
+            return {
+                "order_id": fix_order.cl_ord_id,
+                "approved": False,
+                "reason": "MALFORMED_FIX_MESSAGE: Missing required tags (35, 55, 38, 44)",
+                "latency_us": (time.perf_counter() - t0) * 1_000_000.0,
+                "wire_protocol": "FIX.4.2"
+            }
+        order = TradeOrder(
+            order_id=fix_order.cl_ord_id,
+            symbol=fix_order.symbol,
+            side=fix_order.side,
+            price=fix_order.price,
+            quantity=fix_order.order_qty,
+            account_id=fix_order.sender_comp_id
+        )
+        res = self.evaluate_order(order, mid_market_price)
+        res["wire_protocol"] = "FIX.4.2"
+        return res

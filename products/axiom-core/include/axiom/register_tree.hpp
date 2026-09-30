@@ -3,6 +3,7 @@
 #include "axiom/types.hpp"
 #include "axiom/memory_arena.hpp"
 #include "axiom/stopwords.hpp"
+#include "axiom/simd_math.hpp"
 #include <vector>
 #include <string>
 #include <cmath>
@@ -71,13 +72,8 @@ public:
             out_sig[idx2] += 1.5f;
         }
 
-        // L2 Unit Normalization
-        float sq = 0.0f;
-        for (size_t i = 0; i < dim; ++i) sq += out_sig[i] * out_sig[i];
-        if (sq > 1e-8f) {
-            float inv = 1.0f / std::sqrt(sq);
-            for (size_t i = 0; i < dim; ++i) out_sig[i] *= inv;
-        }
+        // L2 Unit Normalization via SIMD
+        simd_l2_normalize(out_sig, dim);
     }
 
     // Compiles declarative schema into contiguous C++ memory arrays
@@ -155,10 +151,7 @@ public:
 
             for (uint32_t s = 0; s < total_sectors; ++s) {
                 const auto& sec = m_sectors[s];
-                float s_dot = 0.0f;
-                for (size_t i = 0; i < EMBEDDING_DIM; ++i) {
-                    s_dot += embedding[i % dim] * sec.sector_centroid[i];
-                }
+                float s_dot = simd_dot_product(embedding, sec.sector_centroid, EMBEDDING_DIM);
                 s_dots[s] = s_dot;
                 if (s_dot > max_s_dot) {
                     max_s_dot = s_dot;
@@ -190,10 +183,7 @@ public:
                 continue;
             }
 
-            float dot = 0.0f;
-            for (size_t i = 0; i < EMBEDDING_DIM; ++i) {
-                dot += embedding[i % dim] * leaf.weight_vector[i];
-            }
+            float dot = simd_dot_product(embedding, leaf.weight_vector, EMBEDDING_DIM);
             leaf_dots[l] = dot;
             if (dot > best_leaf_dot) {
                 best_leaf_dot = dot;
@@ -411,6 +401,38 @@ public:
         res.leaf_name = new_leaf.name;
         res.sector_id = target_sector_id;
         return res;
+    }
+
+    // Microsecond Online Hebbian/Oja Weight Adaptation (Zero-Heap Allocation)
+    // Formula: Delta w_i = eta * y * (x_i - y * w_i) where y = w^T * x
+    bool adapt_leaf_weights_hebbian(
+        uint32_t leaf_id,
+        const float* input_embedding,
+        size_t dim,
+        float learning_rate = 0.01f
+    ) {
+        if (!input_embedding || dim == 0) return false;
+        size_t eff_dim = std::min(dim, EMBEDDING_DIM);
+
+        for (auto& leaf : m_leaves) {
+            if (leaf.leaf_id == leaf_id) {
+                float y = simd_dot_product(leaf.weight_vector, input_embedding, eff_dim);
+                simd_oja_update(leaf.weight_vector, input_embedding, learning_rate, y, eff_dim);
+                simd_l2_normalize(leaf.weight_vector, EMBEDDING_DIM);
+
+                // Update parent sector centroid with damped plasticity
+                for (auto& sec : m_sectors) {
+                    if (sec.sector_id == leaf.sector_id) {
+                        float sec_y = simd_dot_product(sec.sector_centroid, input_embedding, eff_dim);
+                        simd_oja_update(sec.sector_centroid, input_embedding, learning_rate * 0.5f, sec_y, eff_dim);
+                        simd_l2_normalize(sec.sector_centroid, EMBEDDING_DIM);
+                        break;
+                    }
+                }
+                return true;
+            }
+        }
+        return false;
     }
 
     const SchemaDefinition& get_schema() const noexcept { return m_schema; }

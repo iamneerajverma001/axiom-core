@@ -3,6 +3,7 @@
 #include "axiom/hal.hpp"
 #include "axiom/memory_arena.hpp"
 #include "axiom/stopwords.hpp"
+#include "axiom/simd_math.hpp"
 #include <cmath>
 #include <cstring>
 #include <algorithm>
@@ -52,17 +53,8 @@ public:
             raw_features[idx2] += 1.5f;
         }
 
-        // 2. Kernelized Linear Attention Map: Normalize sparse features directly
-        float norm_sq = 0.0f;
-        for (size_t i = 0; i < embedding_dim; ++i) {
-            norm_sq += raw_features[i] * raw_features[i];
-        }
-        if (norm_sq > 1e-8f) {
-            float inv_norm = 1.0f / std::sqrt(norm_sq);
-            for (size_t i = 0; i < embedding_dim; ++i) {
-                raw_features[i] *= inv_norm;
-            }
-        }
+        // 2. Kernelized Linear Attention Map: Normalize sparse features directly via SIMD
+        simd_l2_normalize(raw_features, embedding_dim);
 
         // 3. SNN Sparse Voltage Thresholding (Spike generation)
         float avg_feature = 1.0f / static_cast<float>(embedding_dim);
@@ -90,17 +82,8 @@ public:
             }
         }
 
-        // L2 Unit Normalization of output embedding vector
-        float l2_sq = 0.0f;
-        for (size_t i = 0; i < embedding_dim; ++i) {
-            l2_sq += ldu_state[i] * ldu_state[i];
-        }
-        if (l2_sq > 1e-8f) {
-            float inv_l2 = 1.0f / std::sqrt(l2_sq);
-            for (size_t i = 0; i < embedding_dim; ++i) {
-                ldu_state[i] *= inv_l2;
-            }
-        }
+        // L2 Unit Normalization of output embedding vector via SIMD
+        simd_l2_normalize(ldu_state, embedding_dim);
 
         // Final embedding output copy to caller-provided memory
         std::memcpy(out_embedding, ldu_state, sizeof(float) * embedding_dim);

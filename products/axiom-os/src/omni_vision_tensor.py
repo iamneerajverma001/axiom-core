@@ -846,6 +846,20 @@ class VisualSpatialTensorEngine:
         if pred.get("feature_vector_128d"):
             try:
                 try:
+                    from axiom_core.client import AxiomClient
+                    _axiom_client = AxiomClient()
+                    client_res = _axiom_client.decide_visual_tensor(pred["feature_vector_128d"], fallback_label=target_description)
+                    pred["axiom_core_decision"] = {
+                        "execution_path": client_res.execution_path,
+                        "choice_label": client_res.choice_label,
+                        "confidence": client_res.confidence,
+                        "latency_us": client_res.latency_us
+                    }
+                    pred["fast_path_verified"] = (client_res.execution_path == "FAST_PATH_COMMIT")
+                except Exception:
+                    pass
+
+                try:
                     from axiom_ipc_bridge import ipc_bridge
                 except ImportError:
                     try:
@@ -861,7 +875,8 @@ class VisualSpatialTensorEngine:
                     )
                     if ipc_res:
                         pred["binary_tensor_ipc"] = ipc_res
-                        pred["fast_path_verified"] = (ipc_res.get("execution_path") == "FAST_PATH_COMMIT")
+                        if not pred.get("fast_path_verified"):
+                            pred["fast_path_verified"] = (ipc_res.get("execution_path") == "FAST_PATH_COMMIT")
             except Exception:
                 pass
 

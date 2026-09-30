@@ -18,13 +18,16 @@ from .models import (
 from .conformal import MartingaleSafetyGate, BrierCalibrator
 from .ipc_bridge import AxiomIpcBridge
 from .client import AxiomClient
+from .wire_protocol import FixOrder, RawPacket
 
-__version__ = "1.1.0"
+__version__ = "1.2.0"
 __all__ = [
     "AxiomClient",
     "AxiomIpcBridge",
     "MartingaleSafetyGate",
     "BrierCalibrator",
+    "FixOrder",
+    "RawPacket",
     "DecisionOutput",
     "FeedbackOutput",
     "ChoiceResult",

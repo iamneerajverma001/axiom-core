@@ -77,6 +77,29 @@ if risk["requires_human_barrier"]:
     print(f"BLOCKED: {risk['reason']}")
 ```
 
+### 3. Direct Wire-Speed Financial & Network Packet Parsing
+```python
+from axiom_core.wire_protocol import FixOrder, RawPacket
+
+# FIX 4.2 sub-microsecond pre-trade decoding:
+order = FixOrder.parse("8=FIX.4.2|35=D|11=ORD1|55=NVDA|54=1|38=250|44=142.50|10=000|")
+print(f"Order Notional: ${order.notional_value:,.2f}") # $35,625.00
+
+# DPDK raw Ethernet frame inspection:
+frame = RawPacket.build_synthetic_tcp_packet(src_ip="192.168.1.1", dst_ip="10.0.0.1", dst_port=443)
+pkt = RawPacket.parse_ethernet_frame(frame)
+print(f"Packet: {pkt.src_ip} -> {pkt.dst_ip}:{pkt.dst_port} (SYN={pkt.is_syn_only})")
+```
+
+### 4. Vision-Tensor-to-Core Reflex Bridge
+```python
+# Direct 128-dim spatial tensor closed-loop reflex (<20µs):
+visual_features = [0.0] * 128
+visual_features[42] = 0.95 # Anomaly activation peak
+reflex_decision = client.decide_visual_tensor(visual_features, fallback_label="Critical_Threat_PopUp")
+print(f"Visual Reflex: {reflex_decision.choice_label} in {reflex_decision.latency_us:.2f} µs")
+```
+
 ---
 
 ## 🛠️ Building C++ Binaries from Source
@@ -87,7 +110,7 @@ mkdir build && cd build
 cmake ..
 cmake --build . --config Release
 ```
-This produces `bin/axiom_cli.exe` and `bin/axiom_benchmark.exe`.
+This produces `bin/axiom_cli.exe` and `bin/axiom_benchmark.exe` (or `bin/axiom_cli` on Linux/macOS with native POSIX `shm_open`).
 
 ---
 
@@ -95,7 +118,8 @@ This produces `bin/axiom_cli.exe` and `bin/axiom_benchmark.exe`.
 
 ```bash
 python -m unittest discover -s tests
-python -m unittest solutions/fintech_pretrade_firewall/test_firewall.py
-python -m unittest solutions/cybersecurity_packet_guard/test_packet_guard.py
-python -m unittest solutions/robotics_motor_reflex/test_motor_reflex.py
+python solutions/fintech_pretrade_firewall/test_firewall.py
+python solutions/cybersecurity_packet_guard/test_packet_guard.py
+python solutions/robotics_motor_reflex/test_motor_reflex.py
+python ../../tests/test_all.py
 ```

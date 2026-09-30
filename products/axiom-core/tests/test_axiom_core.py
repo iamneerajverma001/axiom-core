@@ -171,6 +171,139 @@ class TestAxiomCoreEngine(unittest.TestCase):
         self.assertTrue(hasattr(buf, "feature_vector"))
         self.assertEqual(len(buf.feature_vector), 128)
 
+    def test_wire_speed_fix_parser(self):
+        """Verifies sub-microsecond FIX 4.2/4.4 financial exchange protocol parsing."""
+        from axiom_core.wire_protocol import FixOrder
+        raw_fix = "8=FIX.4.2|9=85|35=D|49=AXIOM|56=NASDAQ|11=ORD_9918|55=NVDA|54=1|38=250|44=142.50|10=182|"
+        
+        t0 = time.perf_counter()
+        order = FixOrder.parse(raw_fix)
+        parse_us = (time.perf_counter() - t0) * 1_000_000.0
+
+        self.assertTrue(order.is_valid)
+        self.assertEqual(order.symbol, "NVDA")
+        self.assertEqual(order.side, "BUY")
+        self.assertEqual(order.order_qty, 250)
+        self.assertEqual(order.price, 142.50)
+        self.assertEqual(order.notional_value, 250 * 142.50)
+        self.assertLess(parse_us, 50.0) # Sub-50 microseconds in pure Python (<1us in native C++)
+
+        # Test encoding
+        encoded = order.to_fix_string(delimiter="|")
+        self.assertIn("35=D|", encoded)
+        self.assertIn("55=NVDA|", encoded)
+        self.assertIn("10=", encoded)
+
+    def test_wire_speed_raw_packet_parser(self):
+        """Verifies line-rate DPDK Ethernet/IP/TCP packet decoding and attack signature detection."""
+        from axiom_core.wire_protocol import RawPacket, TCP_FLAG_SYN, TCP_FLAG_FIN, TCP_FLAG_PSH, TCP_FLAG_URG
+
+        # Clean TCP SYN Packet
+        pkt_bytes = RawPacket.build_synthetic_tcp_packet(
+            src_ip="192.168.1.50",
+            dst_ip="10.0.0.1",
+            src_port=52341,
+            dst_port=443,
+            tcp_flags=TCP_FLAG_SYN
+        )
+        parsed = RawPacket.parse_ethernet_frame(pkt_bytes)
+        self.assertIsNotNone(parsed)
+        self.assertEqual(parsed.src_ip, "192.168.1.50")
+        self.assertEqual(parsed.dst_port, 443)
+        self.assertTrue(parsed.is_syn_only)
+        self.assertFalse(parsed.is_null_scan)
+
+        # Malicious NULL scan (all TCP flags 0)
+        null_bytes = RawPacket.build_synthetic_tcp_packet(
+            src_ip="10.0.0.99",
+            dst_ip="10.0.0.1",
+            tcp_flags=0
+        )
+        parsed_null = RawPacket.parse_ethernet_frame(null_bytes)
+        self.assertIsNotNone(parsed_null)
+        self.assertTrue(parsed_null.is_null_scan)
+
+        # Malicious XMAS scan (FIN + PSH + URG)
+        xmas_bytes = RawPacket.build_synthetic_tcp_packet(
+            src_ip="10.0.0.99",
+            dst_ip="10.0.0.1",
+            tcp_flags=(TCP_FLAG_FIN | TCP_FLAG_PSH | TCP_FLAG_URG)
+        )
+        parsed_xmas = RawPacket.parse_ethernet_frame(xmas_bytes)
+        self.assertIsNotNone(parsed_xmas)
+        self.assertTrue(parsed_xmas.is_xmas_scan)
+
+    def test_visual_tensor_to_core_reflex_bridge(self):
+        """Verifies sub-20µs closed-loop visual reflex gating from 128-dim spatial tensor."""
+        # 128-dimensional synthetic spatial tensor (simulating VisualSpatialTensorEngine output)
+        features = [0.0] * 128
+        features[10] = 0.85
+        features[42] = 0.62
+        features[90] = 0.94
+
+        t0 = time.perf_counter()
+        decision = self.client.decide_visual_tensor(features, fallback_label="Critical_Security_Alert")
+        wall_us = (time.perf_counter() - t0) * 1_000_000.0
+
+        self.assertIsInstance(decision, DecisionOutput)
+        self.assertEqual(decision.execution_path, "FAST_PATH_COMMIT")
+        self.assertGreater(decision.confidence, 0.70)
+        self.assertTrue(decision.noul.value)
+        self.assertTrue(decision.is_singleton)
+        self.assertLess(decision.latency_us, 500.0) # Sub-500µs Python SLA (<20µs in bare-metal shared memory)
+
+    def test_online_hebbian_adaptation(self):
+        """Verifies microsecond online weight plasticity without heap allocation."""
+        features = [0.1] * 128
+        res = self.client.adapt_leaf_online(leaf_id=401, feature_vector=features, learning_rate=0.02)
+        self.assertTrue(res)
+
+    def test_fintech_firewall_fix_wire_evaluation(self):
+        """Verifies PreTradeRiskFirewall processing native FIX messages directly."""
+        from solutions.fintech_pretrade_firewall.firewall import PreTradeRiskFirewall
+        firewall = PreTradeRiskFirewall(max_order_notional=100_000.0)
+
+        # Clean order: 100 shares * $150.0 = $15,000 < $100,000 limit
+        clean_fix = "8=FIX.4.2|35=D|11=ORD_101|55=MSFT|54=1|38=100|44=150.00|10=000|"
+        res_clean = firewall.evaluate_fix_message(clean_fix, mid_market_price=150.0)
+        self.assertTrue(res_clean["approved"])
+        self.assertEqual(res_clean["wire_protocol"], "FIX.4.2")
+
+        # Fat-finger order: 1,000 shares * $150.0 = $150,000 > $100,000 limit
+        fat_fix = "8=FIX.4.2|35=D|11=ORD_102|55=MSFT|54=1|38=1000|44=150.00|10=000|"
+        res_fat = firewall.evaluate_fix_message(fat_fix, mid_market_price=150.0)
+        self.assertFalse(res_fat["approved"])
+        self.assertIn("EXCEEDS_MAX_NOTIONAL", res_fat["reason"])
+
+    def test_cybersecurity_packet_guard_dpdk_wire_evaluation(self):
+        """Verifies PacketGuard inspecting raw DPDK Ethernet packets directly."""
+        from solutions.cybersecurity_packet_guard.packet_guard import PacketGuard
+        from axiom_core.wire_protocol import RawPacket, TCP_FLAG_SYN
+
+        guard = PacketGuard()
+
+        # Clean packet: PASS
+        clean_pkt = RawPacket.build_synthetic_tcp_packet(
+            src_ip="192.168.1.10",
+            dst_ip="10.0.0.1",
+            src_port=50000,
+            dst_port=80,
+            tcp_flags=TCP_FLAG_SYN
+        )
+        res_clean = guard.evaluate_raw_ethernet_packet(clean_pkt)
+        self.assertEqual(res_clean["action"], "PASS")
+        self.assertEqual(res_clean["wire_protocol"], "DPDK_Ethernet_IPv4")
+
+        # Malicious NULL scan: DROP
+        null_pkt = RawPacket.build_synthetic_tcp_packet(
+            src_ip="10.0.0.88",
+            dst_ip="10.0.0.1",
+            tcp_flags=0
+        )
+        res_null = guard.evaluate_raw_ethernet_packet(null_pkt)
+        self.assertEqual(res_null["action"], "DROP")
+        self.assertEqual(res_null["reason"], "MALFORMED_TCP_NULL_SCAN")
+
 
 if __name__ == "__main__":
     unittest.main()

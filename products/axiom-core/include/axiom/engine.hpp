@@ -187,6 +187,61 @@ public:
         }
     }
 
+    // Direct binary feature tensor decision (bypassing text tokenization Layer 1 in <3 microseconds)
+    DecisionResult decide_tensor(const float* feature_vector, size_t dim) {
+        auto t_total_start = std::chrono::high_resolution_clock::now();
+        uint32_t req_id = static_cast<uint32_t>(m_request_counter.fetch_add(1, std::memory_order_relaxed));
+
+        MemoryFrame& frame = m_arena_pool.acquire();
+        FrameGuard frame_guard(frame);
+
+        float* embedding = static_cast<float*>(frame.allocate(sizeof(float) * SparseTensorLoop::DEFAULT_EMBEDDING_DIM));
+        std::memset(embedding, 0, sizeof(float) * SparseTensorLoop::DEFAULT_EMBEDDING_DIM);
+        
+        size_t copy_dim = std::min(dim, SparseTensorLoop::DEFAULT_EMBEDDING_DIM);
+        if (feature_vector && copy_dim > 0) {
+            std::memcpy(embedding, feature_vector, sizeof(float) * copy_dim);
+        }
+        simd_l2_normalize(embedding, SparseTensorLoop::DEFAULT_EMBEDDING_DIM);
+
+        auto t_l2_start = std::chrono::high_resolution_clock::now();
+        Layer2Evaluation l2_eval = m_register_tree.evaluate(embedding, SparseTensorLoop::DEFAULT_EMBEDDING_DIM, frame);
+        auto t_l2_end = std::chrono::high_resolution_clock::now();
+
+        ConformalSet conf_set = m_conformal.generate_set(l2_eval.leaf_distribution, l2_eval.leaf_ids);
+        double l2_us = static_cast<double>(std::chrono::duration_cast<std::chrono::microseconds>(t_l2_end - t_l2_start).count());
+        auto t_total_end = std::chrono::high_resolution_clock::now();
+
+        DecisionResult result;
+        result.request_id = req_id;
+        result.path = (l2_eval.fast_path_eligible && conf_set.is_singleton) ? ExecutionPath::FAST_PATH_COMMIT : ExecutionPath::SYSTEM2_FALLBACK;
+        result.choice.choice_id = l2_eval.selected_leaf_id;
+        result.choice.label = l2_eval.selected_leaf_name;
+        result.choice.confidence = l2_eval.max_probability;
+        result.score.score = l2_eval.max_probability;
+        result.score.variance = l2_eval.confidence_variance;
+        result.noul.value = (l2_eval.max_probability >= 0.70f);
+        result.noul.probability = l2_eval.max_probability;
+        result.noul.is_null = false;
+        result.shannon_entropy = l2_eval.shannon_entropy;
+        result.conformal_set = conf_set;
+        result.feedback.tier3_to_tier1_dispatched = false;
+        result.feedback.executed_leaf_id = l2_eval.selected_leaf_id;
+        result.feedback.target_leaf_name = l2_eval.selected_leaf_name;
+        result.feedback.target_sector_id = l2_eval.macro_sector_id;
+        result.feedback.action_executed = execute_leaf_action(l2_eval.selected_leaf_id, "direct_binary_tensor", result.feedback.execution_status);
+        result.latency_layer1_us = 0.0;
+        result.latency_layer2_us = l2_us;
+        result.latency_layer3_us = 0.0;
+        result.latency_total_us = static_cast<double>(std::chrono::duration_cast<std::chrono::microseconds>(t_total_end - t_total_start).count());
+        return result;
+    }
+
+    // Bare-metal microsecond online continuous Hebbian adaptation
+    bool adapt_leaf_hebbian(uint32_t leaf_id, const float* feature_vector, size_t dim, float learning_rate = 0.01f) {
+        return m_register_tree.adapt_leaf_weights_hebbian(leaf_id, feature_vector, dim, learning_rate);
+    }
+
     uint64_t get_total_requests() const noexcept { return m_request_counter.load(); }
     uint64_t get_fast_path_hits() const noexcept { return m_fast_path_hits.load(); }
     uint64_t get_fallback_hits() const noexcept { return m_fallback_hits.load(); }

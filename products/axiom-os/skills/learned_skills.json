@@ -745,13 +745,13 @@
     "args": {
       "action": "clean_temp"
     },
-    "success_count": 5,
+    "success_count": 7,
     "failure_count": 0,
-    "avg_latency_us": 40454,
+    "avg_latency_us": 32875,
     "source": "RLCD_DYNAMIC_SYNTHESIS",
     "created_at": 1790280898.881903,
-    "last_executed": 1790265712.9750614,
-    "confidence": 0.9161
+    "last_executed": 1790793005.0292957,
+    "confidence": 0.9249
   },
   {
     "skill_id": "skill_rlcd_1790281010",

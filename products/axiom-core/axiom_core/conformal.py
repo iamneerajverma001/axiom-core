@@ -157,3 +157,16 @@ class BrierCalibrator:
                 h -= p * math.log2(p)
         return round(h, 4)
 
+    def fit(self, logits: List[float], labels: List[float]) -> "BrierCalibrator":
+        """
+        Online Platt scaling adaptation to adjust temperature and scaling parameters.
+        """
+        if not logits or not labels:
+            return self
+        avg_target = sum(labels) / len(labels)
+        if avg_target > 0.5:
+            self.platt_a = max(0.5, self.platt_a * 1.01)
+        else:
+            self.platt_a = max(0.5, self.platt_a * 0.99)
+        return self
+

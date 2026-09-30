@@ -372,9 +372,14 @@ int main(int argc, char* argv[]) {
             std::cerr << "[Axiom IPC] Failed to initialize IPC server mapping." << std::endl;
             return 1;
         }
-        server.run_service_loop([&engine](const std::string& q) {
-            return engine.decide(q);
-        });
+        server.run_service_loop(
+            [&engine](const std::string& q) {
+                return engine.decide(q);
+            },
+            [&engine](const float* vec, size_t dim) {
+                return engine.decide_tensor(vec, dim);
+            }
+        );
         return 0;
     }
 
