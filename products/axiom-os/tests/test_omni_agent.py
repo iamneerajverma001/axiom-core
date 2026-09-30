@@ -543,43 +543,60 @@ class TestAxiomUnifiedArchitecture(unittest.TestCase):
 
     def test_distill_skill_from_autonomous_trace(self):
         """Verifies auto-distillation of successful single-step and multi-step compound traces into learned skills and C++ header."""
-        from src.omni_reflex import distill_skill_from_trace, load_skills
-        
-        # 1. Single-step goal distillation
-        goal = "check system date via powershell"
-        trace = {
-            "success": True,
-            "steps": [
-                {
-                    "step": 1,
-                    "action": "powershell_exec",
-                    "args": {"script": "Get-Date"},
-                    "observation": {"success": True, "exit_code": 0}
-                }
-            ]
-        }
-        distilled = distill_skill_from_trace(goal, trace)
-        self.assertIsNotNone(distilled)
-        self.assertEqual(distilled.get("tool"), "powershell_exec")
-        self.assertIn("triggers", distilled)
+        from src.omni_reflex import distill_skill_from_trace, delete_skill
+        import tempfile
 
-        # 2. Compound multi-step goal distillation
-        compound_goal = "launch notepad and take a screenshot"
-        compound_trace = {
-            "success": True,
-            "steps": [
-                {"action": "app_control", "args": {"action": "launch", "target": "notepad"}},
-                {"action": "system_control", "args": {"action": "screenshot"}}
-            ]
-        }
-        distilled_compound = distill_skill_from_trace(compound_goal, compound_trace)
-        self.assertIsNotNone(distilled_compound)
-        self.assertEqual(distilled_compound.get("tool"), "multi_step")
-        self.assertEqual(len(distilled_compound.get("steps", [])), 2)
-        
-        # Verify C++ header was generated and updated
-        cpp_header = os.path.join(PROJECT_ROOT, "include", "axiom", "distilled_reflex_leaves.hpp")
-        self.assertTrue(os.path.exists(cpp_header))
+        distilled = None
+        distilled_compound = None
+        with tempfile.NamedTemporaryFile(suffix=".hpp", delete=False) as tf:
+            temp_header = tf.name
+
+        try:
+            # 1. Single-step goal distillation
+            goal = "check system date via powershell"
+            trace = {
+                "success": True,
+                "steps": [
+                    {
+                        "step": 1,
+                        "action": "powershell_exec",
+                        "args": {"script": "Get-Date"},
+                        "observation": {"success": True, "exit_code": 0}
+                    }
+                ]
+            }
+            distilled = distill_skill_from_trace(goal, trace)
+            self.assertIsNotNone(distilled)
+            self.assertEqual(distilled.get("tool"), "powershell_exec")
+            self.assertIn("triggers", distilled)
+
+            # 2. Compound multi-step goal distillation
+            compound_goal = "launch notepad and take a screenshot"
+            compound_trace = {
+                "success": True,
+                "steps": [
+                    {"action": "app_control", "args": {"action": "launch", "target": "notepad"}},
+                    {"action": "system_control", "args": {"action": "screenshot"}}
+                ]
+            }
+            distilled_compound = distill_skill_from_trace(compound_goal, compound_trace, output_header_path=temp_header)
+            self.assertIsNotNone(distilled_compound)
+            self.assertEqual(distilled_compound.get("tool"), "multi_step")
+            self.assertEqual(len(distilled_compound.get("steps", [])), 2)
+
+            # Verify C++ header was generated and contains distilled reflex leaves
+            self.assertTrue(os.path.exists(temp_header))
+            with open(temp_header, "r", encoding="utf-8") as f:
+                header_content = f.read()
+            self.assertIn("DISTILLED_REFLEX_LEAVES", header_content)
+            self.assertIn("lookup_distilled_reflex", header_content)
+        finally:
+            if os.path.exists(temp_header):
+                os.remove(temp_header)
+            if distilled and "skill_id" in distilled:
+                delete_skill(distilled["skill_id"])
+            if distilled_compound and "skill_id" in distilled_compound:
+                delete_skill(distilled_compound["skill_id"])
 
 
 if __name__ == "__main__":

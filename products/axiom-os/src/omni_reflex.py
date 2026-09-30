@@ -1113,7 +1113,7 @@ def execute_compound_reflex(chain: List[Dict[str, Any]], original_query: str = "
         "final_answer": f"Executed multi-reflex plan ({len(chain)} sequential milestones in {elapsed_ms}ms, 0 tokens): {original_query}"
     }
 
-def distill_skill_from_trace(goal: str, trace: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+def distill_skill_from_trace(goal: str, trace: Dict[str, Any], output_header_path: Optional[str] = None) -> Optional[Dict[str, Any]]:
     """
     RLCD Synthesis: When the Brain successfully achieves a goal,
     distill the execution sequence into an instant Reflex Leaf.
@@ -1156,7 +1156,7 @@ def distill_skill_from_trace(goal: str, trace: Dict[str, Any]) -> Optional[Dict[
         skills.append(new_skill)
         save_skills(skills)
         try:
-            export_distilled_skills_to_cpp()
+            export_distilled_skills_to_cpp(output_path=output_header_path)
         except Exception:
             pass
         return new_skill
@@ -1184,7 +1184,7 @@ def distill_skill_from_trace(goal: str, trace: Dict[str, Any]) -> Optional[Dict[
             s["last_executed"] = time.time()
             save_skills(skills)
             try:
-                export_distilled_skills_to_cpp()
+                export_distilled_skills_to_cpp(output_path=output_header_path)
             except Exception:
                 pass
             return s
@@ -1206,7 +1206,7 @@ def distill_skill_from_trace(goal: str, trace: Dict[str, Any]) -> Optional[Dict[
     skills.append(new_skill)
     save_skills(skills)
     try:
-        export_distilled_skills_to_cpp()
+        export_distilled_skills_to_cpp(output_path=output_header_path)
     except Exception:
         pass
     return new_skill
@@ -1289,7 +1289,7 @@ def export_distilled_skills_to_cpp(output_path: Optional[str] = None) -> str:
         except Exception:
             pass
 
-    return targets[0]
+    return targets[0] if targets else ""
 
 
 def record_reflex_success(skill_id: str, latency_us: float = 30.0):
