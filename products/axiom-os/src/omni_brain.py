@@ -41,6 +41,10 @@ AVAILABLE TOOLS:
   Directly locates and clicks ANY visible button, text label (e.g. "Google", "Submit", "Settings", "Downloads", "File"), dialog, or geometric reflex control ("close button", "calculator button 7").
 - click_text(target="...", verify=True):
   Direct semantic text grounding click tool. Scans the screen, locates the physical bounding box of the specified word or phrase, and clicks its center.
+- visual_element_click(element_id=1, click=True, button="left"|"right"|"double", verify=True):
+  Zero-hallucination Set-of-Marks UI element click. Direct hardware click on the physical center of the numbered element tag [1..N] on screen. PREFER THIS when interacting with numbered UI tags.
+- get_som_screen(max_marks=30):
+  Native OmniParser tool. Returns Set-of-Marks annotated screen image, structured text ledger of all buttons/inputs/icons, and element list.
 - visual_click_sequence(targets=["target1", "target2", ...], delay_between_s=0.15):
   Executes an ordered pipeline of direct visual clicks across the screen with settling probes.
   Example: visual_click_sequence(targets=["calculator button 7", "calculator button plus", "calculator button 8", "calculator button equals"])
@@ -103,16 +107,21 @@ def sanitize_obs_for_llm(obs: dict, max_len: int = 1200) -> dict:
             clean[key] = f"{head}\n\n... [{len(val) - 1050} characters truncated for LLM reasoning context] ...\n\n{tail}"
     return clean
 
-def get_screen_base64(max_dim: int = 1024, quality: int = 70) -> str:
-    """Captures and downsamples desktop screen to compact JPEG base64 string for VLM perception."""
+def get_screen_base64(use_som: bool = False, max_dim: int = 1024, quality: int = 70) -> str:
+    """Captures and downsamples desktop screen (with optional Set-of-Marks tags) to compact JPEG base64 string for VLM perception."""
     try:
         try:
-            from omni_vision_tensor import capture_screen_fast
+            from omni_vision_tensor import capture_screen_fast, vision_tensor_engine
         except ImportError:
-            from src.omni_vision_tensor import capture_screen_fast
+            from src.omni_vision_tensor import capture_screen_fast, vision_tensor_engine
         import io
         import base64
         img, w, h = capture_screen_fast()
+        if use_som:
+            try:
+                img, _, _ = vision_tensor_engine.render_set_of_marks(img, max_marks=30)
+            except Exception:
+                pass
         scale = min(1.0, max_dim / max(w, h))
         if scale < 1.0:
             new_w = int(w * scale)
@@ -642,9 +651,9 @@ def run_autonomous_loop(
             "timestamp": time.time()
         }
 
-        # Capture live screen for multimodal vision models
+        # Capture live screen for multimodal vision models with Set-of-Marks tags
         is_vision_model = any(k in (model or "").lower() for k in ("claude", "gpt-4", "vl", "vision", "gemini", "llava"))
-        img_b64 = get_screen_base64() if (is_vision_model and step_count <= 3) else None
+        img_b64 = get_screen_base64(use_som=True) if is_vision_model else None
 
         try:
             decision = query_llm_json(
@@ -772,7 +781,7 @@ def run_autonomous_loop(
         is_click_directive = any(target_context_lower.startswith(p) or f" {p}" in target_context_lower for p in ("click on ", "click the ", "click ", "tap on ", "press ")) or any(k in goal_lower for k in ("click button", "click 7", "click plus", "click equals", "click close", "click search"))
         is_photo_intent = any(p in goal_lower for p in ("click photo", "click a photo", "click picture", "take picture", "take photo", "capture photo"))
 
-        if is_click_directive and not is_photo_intent and action not in ("visual_spatial_click", "visual_click_sequence", "click_text"):
+        if is_click_directive and not is_photo_intent and action not in ("visual_spatial_click", "visual_click_sequence", "click_text", "visual_element_click"):
             if "calc" in goal_lower or "calculator" in goal_lower:
                 # If app not opened yet, allow app_control launch first
                 if not any(s.get("action") == "app_control" for s in execution_trace["steps"]):
@@ -800,7 +809,14 @@ def run_autonomous_loop(
                     if extracted_target.lower().endswith(suffix):
                         extracted_target = extracted_target[:-len(suffix)].strip()
 
-                if extracted_target:
+                # Check for Set-of-Marks numeric ID reference: [1], mark 2, element 3, or pure digit
+                elem_id_match = re.search(r'\[(\d+)\]|element\s*(\d+)|mark\s*(\d+)|^(\d+)$', extracted_target.lower())
+                if elem_id_match:
+                    num_str = next(g for g in elem_id_match.groups() if g is not None)
+                    action = "visual_element_click"
+                    args = {"element_id": int(num_str), "click": True, "verify": True}
+                    thought = (thought + " " if thought else "") + f"[Omni-Brain Guard: Grounded numeric UI directive to Set-of-Marks tag [{num_str}]]"
+                elif extracted_target:
                     action = "visual_spatial_click"
                     args = {"target": extracted_target, "click": True, "verify": True}
                     thought = (thought + " " if thought else "") + f"[Omni-Brain Guard: Grounded UI click to Visual-Spatial Tensor '{extracted_target}']"

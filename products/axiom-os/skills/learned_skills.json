@@ -34,11 +34,11 @@
     "args": {
       "action": "minimize_all"
     },
-    "success_count": 99,
+    "success_count": 103,
     "failure_count": 0,
-    "avg_latency_us": 123676,
+    "avg_latency_us": 146912,
     "source": "DEFAULT_REFLEX",
-    "last_executed": 1790788618.4124963,
+    "last_executed": 1790790387.7854788,
     "confidence": 0.999
   },
   {
@@ -55,11 +55,11 @@
     "args": {
       "action": "mute"
     },
-    "success_count": 132,
+    "success_count": 138,
     "failure_count": 0,
-    "avg_latency_us": 40990,
+    "avg_latency_us": 44316,
     "source": "DEFAULT_REFLEX",
-    "last_executed": 1790788618.2820673,
+    "last_executed": 1790790387.6019287,
     "confidence": 0.999
   },
   {
@@ -237,12 +237,12 @@
     "args": {
       "action": "open_camera"
     },
-    "success_count": 43,
+    "success_count": 45,
     "failure_count": 0,
-    "avg_latency_us": 1686691,
+    "avg_latency_us": 1596094,
     "source": "DEFAULT_REFLEX",
-    "last_executed": 1790788609.8431547,
-    "confidence": 0.9058
+    "last_executed": 1790790379.6559699,
+    "confidence": 0.9061
   },
   {
     "skill_id": "skill_camera_capture_person",
@@ -264,12 +264,12 @@
       "timeout_s": 12.0,
       "open_viewer": true
     },
-    "success_count": 37,
+    "success_count": 39,
     "failure_count": 0,
-    "avg_latency_us": 12876758,
+    "avg_latency_us": 10471576,
     "source": "DEFAULT_REFLEX",
-    "last_executed": 1790788616.2786698,
-    "confidence": 0.8795
+    "last_executed": 1790790385.0352645,
+    "confidence": 0.879
   },
   {
     "skill_id": "skill_camera_snapshot",
@@ -311,12 +311,12 @@
     "args": {
       "url": "https://www.youtube.com"
     },
-    "success_count": 58,
+    "success_count": 60,
     "failure_count": 0,
-    "avg_latency_us": 70124,
+    "avg_latency_us": 83582,
     "source": "DEFAULT_REFLEX",
-    "last_executed": 1790788618.18162,
-    "confidence": 0.9817
+    "last_executed": 1790790387.3534746,
+    "confidence": 0.9858
   },
   {
     "skill_id": "skill_open_browser",
@@ -358,12 +358,12 @@
       "action": "play_music",
       "query": ""
     },
-    "success_count": 43,
+    "success_count": 45,
     "failure_count": 0,
-    "avg_latency_us": 1391606,
+    "avg_latency_us": 1571393,
     "source": "DEFAULT_REFLEX",
-    "last_executed": 1790788618.0799417,
-    "confidence": 0.898
+    "last_executed": 1790790387.1662545,
+    "confidence": 0.8981
   },
   {
     "skill_id": "skill_close_notepad",
@@ -1166,12 +1166,12 @@
       }
     ],
     "args": {},
-    "success_count": 5,
+    "success_count": 6,
     "failure_count": 0,
-    "avg_latency_us": 857134.3,
+    "avg_latency_us": 1078248.9,
     "source": "RLCD_DYNAMIC_SYNTHESIS",
     "created_at": 1790750217.2708695,
-    "last_executed": 1790788593.9658356
+    "last_executed": 1790790364.159702
   },
   {
     "skill_id": "skill_rlcd_1790750217",

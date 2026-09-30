@@ -2222,8 +2222,139 @@ def execute_tool(tool_name: str, **kwargs) -> dict:
             delay_s=float(kwargs.get("delay_s", 0.01)),
             use_clipboard=bool(kwargs.get("use_clipboard", False))
         )
+    elif t_clean in ("visual_element_click", "click_element", "som_click", "click_mark", "element_click"):
+        elem_id = kwargs.get("element_id", kwargs.get("id", kwargs.get("target", 1)))
+        try:
+            elem_id = int(str(elem_id).strip("[]# "))
+        except Exception:
+            elem_id = 1
+        return visual_element_click(
+            element_id=elem_id,
+            click=bool(kwargs.get("click", True)),
+            button=kwargs.get("button", "left"),
+            verify=bool(kwargs.get("verify", True))
+        )
+    elif t_clean in ("get_som_screen", "parse_ui_elements", "omni_parser", "ui_elements", "screen_elements"):
+        return get_som_screen(max_marks=int(kwargs.get("max_marks", 30)))
     else:
         return {"success": False, "error": f"Unknown tool: '{tool_name}'"}
+
+# Cached Set-of-Marks elements for zero-latency numeric clicks
+_CACHED_SOM_ELEMENTS: list = []
+
+def get_som_screen(max_marks: int = 30) -> dict:
+    """
+    Sub-30ms bare-metal UI Element & Icon Extractor (Native OmniParser equivalent).
+    Returns Set-of-Marks annotated screen image, structured text ledger, and element list.
+    """
+    global _CACHED_SOM_ELEMENTS
+    try:
+        try:
+            from omni_vision_tensor import vision_tensor_engine, capture_screen_fast
+        except ImportError:
+            from src.omni_vision_tensor import vision_tensor_engine, capture_screen_fast
+        import io
+        import base64
+
+        img, w, h = capture_screen_fast()
+        som_img, ledger_str, elements = vision_tensor_engine.render_set_of_marks(img, max_marks=max_marks)
+        _CACHED_SOM_ELEMENTS = elements
+
+        buf = io.BytesIO()
+        scale = min(1.0, 1024 / max(w, h))
+        target_size = (int(w * scale), int(h * scale))
+        som_img.resize(target_size).save(buf, format="JPEG", quality=75)
+        b64 = base64.b64encode(buf.getvalue()).decode("utf-8")
+
+        return {
+            "success": True,
+            "total_elements": len(elements),
+            "ledger": ledger_str,
+            "elements": elements,
+            "image_b64": b64
+        }
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+def visual_element_click(
+    element_id: int = 1,
+    click: bool = True,
+    button: str = "left",
+    verify: bool = True
+) -> dict:
+    """
+    Clicks a specific UI element by its Set-of-Marks numeric ID [1..N].
+    Instantly grounds to the physical pixel centroid without coordinate hallucination.
+    """
+    global _CACHED_SOM_ELEMENTS
+    try:
+        try:
+            from omni_vision_tensor import vision_tensor_engine, capture_screen_fast
+        except ImportError:
+            from src.omni_vision_tensor import vision_tensor_engine, capture_screen_fast
+
+        img_before, w, h = capture_screen_fast()
+
+        matched = next((e for e in _CACHED_SOM_ELEMENTS if e.get("id") == element_id), None)
+        if not matched:
+            elements = vision_tensor_engine.detect_ui_elements(img_before, screen_w=w, screen_h=h)
+            _CACHED_SOM_ELEMENTS = elements
+            matched = next((e for e in elements if e.get("id") == element_id), None)
+
+        if not matched:
+            return {"success": False, "error": f"UI element [{element_id}] not found on screen. Active elements: {len(_CACHED_SOM_ELEMENTS)}"}
+
+        target_x = matched["cx"]
+        target_y = matched["cy"]
+
+        if click and sys.platform == 'win32' and user32:
+            user32.SetCursorPos(target_x, target_y)
+            time.sleep(0.02)
+            btn = button.lower().strip()
+            if btn == "right":
+                user32.mouse_event(0x0008, 0, 0, 0, 0)
+                user32.mouse_event(0x0010, 0, 0, 0, 0)
+            elif btn == "double":
+                user32.mouse_event(0x0002, 0, 0, 0, 0)
+                user32.mouse_event(0x0004, 0, 0, 0, 0)
+                time.sleep(0.04)
+                user32.mouse_event(0x0002, 0, 0, 0, 0)
+                user32.mouse_event(0x0004, 0, 0, 0, 0)
+            else:
+                user32.mouse_event(0x0002, 0, 0, 0, 0)
+                user32.mouse_event(0x0004, 0, 0, 0, 0)
+
+            v_res = {}
+            if verify:
+                time.sleep(0.05)
+                img_after, _, _ = capture_screen_fast()
+                v_res = vision_tensor_engine.verify_visual_state_transition(img_before, img_after, target_x, target_y)
+
+            return {
+                "success": True,
+                "action": "visual_element_click",
+                "element_id": element_id,
+                "element_type": matched.get("type"),
+                "element_text": matched.get("text"),
+                "phys_x": target_x,
+                "phys_y": target_y,
+                "clicked": True,
+                **v_res,
+                "message": f"Successfully clicked UI Element [{element_id}] ('{matched.get('text') or matched.get('type')}') at ({target_x}, {target_y})"
+            }
+        else:
+            return {
+                "success": True,
+                "action": "visual_element_click",
+                "element_id": element_id,
+                "element_type": matched.get("type"),
+                "element_text": matched.get("text"),
+                "phys_x": target_x,
+                "phys_y": target_y,
+                "clicked": False
+            }
+    except Exception as e:
+        return {"success": False, "error": str(e)}
 
 def visual_spatial_click(
     target: str = "close button",

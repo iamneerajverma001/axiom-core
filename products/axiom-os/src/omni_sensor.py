@@ -284,6 +284,44 @@ def get_visible_ui_labels(max_elements: int = 12) -> List[str]:
         pass
     return []
 
+def get_ui_element_ledger(max_elements: int = 15) -> Tuple[List[str], str]:
+    """
+    Scans screen with native UI contour & WinOCR extractor (Native OmniParser).
+    Returns prominent visible text labels and compact Set-of-Marks ledger lines.
+    """
+    labels = []
+    ledger_str = ""
+    try:
+        try:
+            from omni_vision_tensor import vision_tensor_engine, capture_screen_fast
+        except ImportError:
+            from src.omni_vision_tensor import vision_tensor_engine, capture_screen_fast
+
+        img, w, h = capture_screen_fast()
+        elements = vision_tensor_engine.detect_ui_elements(img, screen_w=w, screen_h=h)
+        if elements:
+            seen = set()
+            for el in elements:
+                t = el.get("text", "").strip()
+                if t and len(t) >= 2 and t.lower() not in seen:
+                    seen.add(t.lower())
+                    labels.append(t)
+                if len(labels) >= max_elements:
+                    break
+
+            lines = []
+            for el in elements[:max_elements]:
+                txt = el.get("text")
+                typ = el.get("type", "elem").upper()
+                role = el.get("role", "")
+                desc = f"'{txt}'" if txt else (f"role={role}" if role else "")
+                lines.append(f"[{el['id']}] {typ} {desc} at ({el['cx']}, {el['cy']})")
+            if lines:
+                ledger_str = "- Screen UI Elements (Set-of-Marks):\n  " + "\n  ".join(lines)
+    except Exception:
+        pass
+    return labels, ledger_str
+
 def get_comprehensive_pc_state(include_visual_labels: bool = True) -> dict:
     """
     Returns an omnipresent 360-degree snapshot of the entire PC environment,
@@ -295,7 +333,10 @@ def get_comprehensive_pc_state(include_visual_labels: bool = True) -> dict:
     telemetry = get_system_hardware_telemetry()
     ports = get_active_listening_ports()
     clip = get_clipboard_text(200)
-    ui_labels = get_visible_ui_labels() if include_visual_labels else []
+
+    ui_labels, som_ledger = get_ui_element_ledger() if include_visual_labels else ([], "")
+    if not ui_labels and include_visual_labels:
+        ui_labels = get_visible_ui_labels()
 
     # Format human-readable perception string for LLM grounding
     win_list_str = ", ".join([f"'{w['title']}' ({w['process']})" for w in windows]) or "No active user windows"
@@ -310,12 +351,14 @@ def get_comprehensive_pc_state(include_visual_labels: bool = True) -> dict:
 
     clip_str = f"- Clipboard Preview: '{clip}'" if clip else "- Clipboard: (Empty)"
     ui_str = f"- Visible Screen UI Text: {', '.join([repr(l) for l in ui_labels])}\n" if ui_labels else ""
+    som_str = f"{som_ledger}\n" if som_ledger else ""
 
     prompt_context = (
         f"[CURRENT PC PERCEPTION SNAPSHOT]\n"
         f"- Foreground Active Window: '{fg['title']}' (Process: {fg['process']}, PID: {fg['pid']})\n"
         f"- Visible Windows: {win_list_str}\n"
         f"{ui_str}"
+        f"{som_str}"
         f"- Media Playback State: {media_str}\n"
         f"- System Health: CPU {telemetry['cpu_percent']}%, RAM {telemetry['ram_used_gb']}/{telemetry['ram_total_gb']} GB ({telemetry['ram_percent']}%), Battery {telemetry['battery_percent']}% ({'AC Charging' if telemetry['is_charging'] else 'Battery'})\n"
         f"- Active Listening Ports: {ports[:10]}\n"

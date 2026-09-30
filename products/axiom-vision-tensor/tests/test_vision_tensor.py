@@ -147,6 +147,44 @@ class TestVisionTensorEngine(unittest.TestCase):
         self.assertLessEqual(res["phys_y"], 380)
         self.assertGreater(res["confidence"], 0.85)
 
+    def test_ui_element_contour_detection(self):
+        from PIL import ImageDraw
+        canvas = Image.new("RGB", (800, 600), color=(240, 240, 240))
+        d = ImageDraw.Draw(canvas)
+        # Mock button
+        d.rectangle([100, 100, 250, 150], fill=(50, 120, 240), outline=(20, 80, 200), width=2)
+        # Mock input field
+        d.rectangle([100, 200, 400, 240], fill=(255, 255, 255), outline=(150, 150, 150), width=2)
+
+        elems = self.engine.detect_ui_elements(canvas, screen_w=800, screen_h=600, include_ocr=False)
+        self.assertGreaterEqual(len(elems), 2)
+        button_elem = next((e for e in elems if e["type"] in ("button", "ui_control")), None)
+        self.assertIsNotNone(button_elem)
+        self.assertIn("bbox", button_elem)
+        self.assertIn("cx", button_elem)
+        self.assertIn("cy", button_elem)
+
+    def test_render_set_of_marks(self):
+        from PIL import ImageDraw
+        canvas = Image.new("RGB", (600, 400), color=(240, 240, 240))
+        d = ImageDraw.Draw(canvas)
+        d.rectangle([50, 50, 150, 90], fill=(50, 120, 240))
+        som_img, ledger, elems = self.engine.render_set_of_marks(canvas, max_marks=10)
+        self.assertEqual(som_img.size, (600, 400))
+        self.assertIn("[Interactive UI Set-of-Marks Ledger]", ledger)
+        self.assertGreaterEqual(len(elems), 1)
+
+    def test_predict_with_routing_tiers(self):
+        # Tier 1 reflex check
+        tier1_res = self.engine.predict_with_routing("close button", self.test_img)
+        self.assertEqual(tier1_res["routing_tier"], 1)
+        self.assertIn("Tier-1", tier1_res["routing_tier_name"])
+
+        # Tier 2 text search check
+        tier2_res = self.engine.predict_with_routing("search bar", self.test_img)
+        self.assertIn(tier2_res["routing_tier"], (2, 3))
+        self.assertIn("routing_tier_name", tier2_res)
+
 if __name__ == "__main__":
     unittest.main()
 
