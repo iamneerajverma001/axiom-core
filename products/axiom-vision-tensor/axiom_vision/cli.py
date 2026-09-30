@@ -8,9 +8,15 @@ import json
 import sys
 import os
 
-from .engine import default_vision_engine
-from .capture import capture_screen_gdi
-from .visualizer import render_heatmap_overlay, render_ascii_heatmap
+if __package__ is None or __package__ == "":
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    from axiom_vision.engine import default_vision_engine
+    from axiom_vision.capture import capture_screen_gdi
+    from axiom_vision.visualizer import render_heatmap_overlay, render_ascii_heatmap
+else:
+    from .engine import default_vision_engine
+    from .capture import capture_screen_gdi
+    from .visualizer import render_heatmap_overlay, render_ascii_heatmap
 
 def main():
     parser = argparse.ArgumentParser(description="Axiom Vision-Tensor: Sub-16ms Zero-OCR Visual Clicker")
