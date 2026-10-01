@@ -83,9 +83,12 @@ When external stochastic drift violates the barrier condition, Axiom Core analyt
 | Component | Header / Module | Function | Performance |
 | :--- | :--- | :--- | :--- |
 | **Lyapunov Barrier** | `lyapunov_barrier.hpp` | Continuous barrier evaluation & active-set projection | $< 0.8\ \mu\text{s}$ |
+| **Bipedal Locomotion** | `bipedal_locomotion.hpp` | 1,000 Hz LIPM, ZMP polygon & Capture Point stumble shield | $< 1.1\ \mu\text{s}$ |
+| **Cobot Manipulator** | `manipulator_reflex.hpp` | 6-DOF Jacobian Damped Least Squares & contact impedance | $< 0.9\ \mu\text{s}$ |
 | **MAVLink 2.0** | `mavlink_bridge.hpp` | Direct PX4 / ArduPilot wire serialization & parsing | $< 0.4\ \mu\text{s}$ |
 | **DVS Event Camera** | `event_camera_dvs.hpp` | Asynchronous microsecond pixel spike surface integration | $< 1.2\ \mu\text{s}$ |
 | **Axiom-V Silicon** | `fpga_verilog_synth.hpp` | Generates IEEE 1364-2001 Verilog HDL (`axiom_lif_core.v`) | $5\text{ ns}$ (200 MHz clock) |
+| **Edge Daemon** | `edge_daemon.hpp` | Pinned real-time executive with hardware watchdog | $1{,}000\text{ Hz}$ loop |
 | **Sim2Real Bridge** | `sim2real_bridge.hpp` | High-speed binary UDP/SHM link for Isaac Sim / MuJoCo | $< 0.3\ \mu\text{s}$ |
 | **Ville-Cert Engine** | `certifier.hpp` | Automated 5,000+ trial adversarial stress-testing | $59\text{ ms}$ total run |
 
@@ -112,13 +115,21 @@ python -m axiom_core.certifier
 
 ---
 
-## 5. Planetary 3D Swarm Fleet Command
+## 5. Planetary Cockpits & Mission Control
 
-Launch the interactive 3D multi-drone command center:
+Launch the real-time physical AI command centers:
 ```powershell
+# Grand Unified Mission Control (Airspace, Terrestrial, Industrial & Silicon):
+.\launch_master_cockpit.bat
+
+# Planetary 3D Swarm Fleet Command (5 Autonomous 6-DOF Drones):
 .\launch_swarm_cockpit_3d.bat
+
+# Terrestrial Bipedal Humanoid Balance Cockpit (1,000 Hz LIPM + Capture Point):
+.\launch_bipedal_cockpit_3d.bat
 ```
 * **5 Autonomous 6-DOF Drones** navigating dynamic 3D airspace.
+* **Terrestrial Bipedal Humanoid Balance** dynamically resisting pushes via Capture Point recovery.
 * **3D Reynolds Flocking** fused with Control Lyapunov-Barrier safety shields.
 * **Decentralized CRDT Vector Clocks** synchronizing fleet state with zero lock contention.
 * **Live Wire Stream** of MAVLink 2.0 binary packets and CAN-FD motor telemetry.
@@ -127,6 +138,7 @@ Launch the interactive 3D multi-drone command center:
 
 ## 6. Monorepo Verification & Status
 
-* **Native C++ Standalone Headers:** 31 headers verified compile-clean with `g++ -std=c++1z`.
+* **Native C++ Standalone Headers:** 33 headers verified compile-clean with `g++ -std=c++1z`.
 * **Native C++ Executable Benchmark:** `build/axiom_superium_native_test.exe` passed with 100% health across all pillars.
-* **Unified Monorepo Test Suite:** **66 / 66 tests passing (100% HEALTHY)** via `python tests/test_all.py`.
+* **Unified Monorepo Test Suite:** **69 / 69 tests passing (100% HEALTHY)** via `python tests/test_all.py`.
+
