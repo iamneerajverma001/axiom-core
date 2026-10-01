@@ -11,6 +11,7 @@ setup(
         "console_scripts": [
             "axiomc = axiom_core.compiler:main",
             "axiom-hud = axiom_core.telemetry_hud:main",
+            "axiom-cert = axiom_core.certifier:main",
         ]
     },
     package_data={

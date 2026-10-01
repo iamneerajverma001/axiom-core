@@ -54,6 +54,16 @@ from .swarm_fleet import (
     SwarmFleetCoordinator,
     DroneAgent
 )
+from .certifier import (
+    VilleSafetyCertifier,
+    CertificationSpec,
+    CertificationReport
+)
+from .sim2real_bridge import (
+    Sim2RealBridge,
+    SimState,
+    SimCommand
+)
 
 __version__ = "3.0.0"
 __all__ = [
@@ -95,4 +105,10 @@ __all__ = [
     "SynthOptions",
     "SwarmFleetCoordinator",
     "DroneAgent",
+    "VilleSafetyCertifier",
+    "CertificationSpec",
+    "CertificationReport",
+    "Sim2RealBridge",
+    "SimState",
+    "SimCommand",
 ]

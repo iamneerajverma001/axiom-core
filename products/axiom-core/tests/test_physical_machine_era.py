@@ -31,7 +31,12 @@ from axiom_core import (
     FpgaVerilogSynthesizer,
     SynthOptions,
     AxiomPolicyCompiler,
-    SwarmFleetCoordinator
+    SwarmFleetCoordinator,
+    VilleSafetyCertifier,
+    CertificationSpec,
+    Sim2RealBridge,
+    SimCommand,
+    SimState
 )
 
 class TestPhysicalMachineEra(unittest.TestCase):
@@ -173,6 +178,52 @@ class TestPhysicalMachineEra(unittest.TestCase):
         swarm.set_formation_mode("DISPERSAL")
         step_res_disp = swarm.step_simulation(dt=0.05)
         self.assertEqual(step_res_disp["formation"], "DISPERSAL")
+
+    def test_ville_safety_certifier_execution(self):
+        spec = CertificationSpec(stress_trials=500)
+        report = VilleSafetyCertifier.certify(spec)
+        self.assertTrue(report.certified)
+        self.assertEqual(report.violations_penetrated, 0)
+        self.assertGreater(report.interlocks_engaged, 0)
+        self.assertIn("ISO-26262 ASIL-D", report.compliance_standards)
+        self.assertTrue(len(report.merkle_proof_root) > 0)
+
+    def test_sim2real_bridge_packet_serialization(self):
+        cmd = SimCommand(
+            timestamp_ns=1000000,
+            motor_torques=(0.8, 0.75, 0.75, 0.8),
+            estop_engaged=False,
+            safety_interlock_active=True,
+            martingale_wealth=1.5,
+            sequence_id=42
+        )
+        cmd_bytes = Sim2RealBridge.serialize_command(cmd)
+        self.assertTrue(len(cmd_bytes) > 20)
+
+        # Build synthetic state packet
+        import struct
+        state_bytes = struct.pack(
+            Sim2RealBridge.STATE_FMT,
+            0x53494D32, # SIM2
+            2000000,    # ts_ns
+            10.0, 20.0, 30.0, # pos
+            1.0, 2.0, 3.0,    # lin_vel
+            1.0, 0.0, 0.0, 0.0, # quat
+            0.1, 0.2, 0.3,    # ang_vel
+            *( [5.0] * 16 ),  # lidar
+            101               # seq
+        )
+        sim_state = Sim2RealBridge.deserialize_state(state_bytes)
+        self.assertIsNotNone(sim_state)
+        self.assertEqual(sim_state.sequence_id, 101)
+        self.assertAlmostEqual(sim_state.position[0], 10.0, places=2)
+        self.assertEqual(len(sim_state.lidar_distances), 16)
+
+    def test_fpga_verilog_synthesizer_testbench(self):
+        opt = SynthOptions(module_name="axiom_tb_test")
+        tb_code = FpgaVerilogSynthesizer.synthesize_testbench(opt)
+        self.assertIn("module tb_axiom_tb_test", tb_code)
+        self.assertIn("$finish", tb_code)
 
 if __name__ == "__main__":
     unittest.main()

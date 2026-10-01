@@ -170,13 +170,13 @@ class AxiomPolicyCompiler:
             "",
             f"namespace {domain_name}",
             "",
-            f"def alpha : ℝ := {alpha}",
-            f"def stopping_barrier : ℝ := {inv_alpha}",
+            f"def alpha : Real := {alpha}",
+            f"def stopping_barrier : Real := {inv_alpha}",
             "",
             "/-- Theorem: Ville's Maximal Inequality for Supermartingales -/",
             "/-- For any non-negative supermartingale M_n with M_0 = 1, P(sup M_n >= 1/alpha) <= alpha -/",
-            "axiom villes_maximal_inequality (M : ℕ → ℝ) (h_super : True) :",
-            "  True -- P(∃ n, M n ≥ stopping_barrier) ≤ alpha",
+            "axiom villes_maximal_inequality (M : Nat -> Real) (h_super : True) :",
+            "  True -- P(exists n, M n >= stopping_barrier) <= alpha",
             "",
             f"end {domain_name}"
         ]
@@ -205,11 +205,16 @@ def main():
     out_file = None
     target = "cpp20"
 
-    for i in range(2, len(sys.argv)):
+    i = 2
+    while i < len(sys.argv):
         if sys.argv[i] == "--target" and i + 1 < len(sys.argv):
             target = sys.argv[i + 1]
+            i += 2
         elif not sys.argv[i].startswith("--") and out_file is None:
             out_file = sys.argv[i]
+            i += 1
+        else:
+            i += 1
 
     with open(in_file, "r", encoding="utf-8") as f:
         schema = json.load(f)

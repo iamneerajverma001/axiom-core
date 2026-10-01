@@ -21,6 +21,8 @@
 #include "axiom/mavlink_bridge.hpp"
 #include "axiom/event_camera_dvs.hpp"
 #include "axiom/fpga_verilog_synth.hpp"
+#include "axiom/certifier.hpp"
+#include "axiom/sim2real_bridge.hpp"
 
 using namespace axiom;
 
@@ -164,7 +166,23 @@ int main() {
         assert(verilog.find("module test_axiom_lif_core") != std::string::npos);
         assert(verilog.find("BARRIER_THRESH") != std::string::npos);
 
-        std::cout << "[PASS] Physical AI Era: CLBF Barrier, MAVLink 2.0, DVS Camera, FPGA Silicon Verilog\n";
+        // 7e. Automated Ville Safety Certifier
+        VilleSafetyCertifier::CertificationSpec c_spec;
+        c_spec.stress_trials = 1000;
+        auto cert_rep = VilleSafetyCertifier::certify(c_spec);
+        assert(cert_rep.certified);
+        assert(cert_rep.violations_penetrated == 0);
+
+        // 7f. Sim2Real High-Speed Telemetry Bridge
+        Sim2RealBridge::CommandPacket cmd_pkt;
+        cmd_pkt.motor_torques[0] = 0.85f;
+        cmd_pkt.estop_engaged = 0;
+        cmd_pkt.sequence_id = 999;
+        uint8_t cmd_buf[sizeof(Sim2RealBridge::CommandPacket)];
+        size_t cmd_bytes = Sim2RealBridge::serialize_command(cmd_pkt, cmd_buf, sizeof(cmd_buf));
+        assert(cmd_bytes == sizeof(Sim2RealBridge::CommandPacket));
+
+        std::cout << "[PASS] Physical AI Era: CLBF Barrier, MAVLink 2.0, DVS Camera, FPGA Silicon Verilog, Ville-Cert, Sim2Real\n";
     }
 
     std::cout << "\n=====================================================================\n";

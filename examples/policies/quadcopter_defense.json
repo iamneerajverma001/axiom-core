@@ -1,0 +1,27 @@
+{
+  "domain": "QuadcopterPhysicalDefense",
+  "conformal_alpha": 0.001,
+  "confidence_threshold": 0.85,
+  "entropy_threshold": 0.35,
+  "sectors": [
+    {
+      "sector_id": 1,
+      "name": "KinematicReflexSector",
+      "leaves": [
+        {"leaf_id": 101, "name": "NominalCruising", "description": "High-efficiency cruise trajectory"},
+        {"leaf_id": 102, "name": "VortexRingRecovery", "description": "Aerodynamic vortex burst recovery"},
+        {"leaf_id": 103, "name": "CollisionRepulsion", "description": "Emergency barrier projection away from hazard"},
+        {"leaf_id": 104, "name": "BallisticEStop", "description": "Immediate hardware rotor feathering safe drop"}
+      ]
+    },
+    {
+      "sector_id": 2,
+      "name": "SwarmTacticalSector",
+      "leaves": [
+        {"leaf_id": 201, "name": "VFormationLock", "description": "Maintain aerodynamic chevron apex lock"},
+        {"leaf_id": 202, "name": "PerimeterOrbit", "description": "Spherical perimeter perimeter surveillance"},
+        {"leaf_id": 203, "name": "MeshStateReconcile", "description": "Asynchronous CRDT vector clock gossip exchange"}
+      ]
+    }
+  ]
+}

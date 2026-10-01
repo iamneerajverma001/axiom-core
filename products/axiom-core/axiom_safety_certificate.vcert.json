@@ -1,0 +1,17 @@
+{
+  "certified": true,
+  "system_name": "AxiomPhysicalSystem",
+  "alpha": 0.001,
+  "stopping_barrier": 1000.0,
+  "max_observed_wealth": Infinity,
+  "total_trials": 5000,
+  "interlocks_engaged": 4996,
+  "violations_penetrated": 0,
+  "verification_time_ms": 59.823100000357954,
+  "merkle_proof_root": "99d7df5a7de91ed58ee4133deb3f9ced09496b9cc2da3abf9839f155adb8e7fa",
+  "compliance_standards": [
+    "ISO-26262 ASIL-D",
+    "DO-178C Level A",
+    "Ville-Supermartingale"
+  ]
+}

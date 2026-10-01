@@ -109,3 +109,43 @@ class FpgaVerilogSynthesizer:
             ""
         ]
         return "\n".join(code)
+
+    @staticmethod
+    def synthesize_testbench(opt: Optional[SynthOptions] = None) -> str:
+        if opt is None:
+            opt = SynthOptions()
+
+        tb_code = [
+            f"// Self-Verifying Testbench for {opt.module_name}",
+            "`timescale 1ns / 1ps",
+            f"module tb_{opt.module_name};",
+            "    reg        clk;",
+            "    reg        rst_n;",
+            "    reg [15:0] current_in;",
+            "    reg [6:0]  neuron_addr;",
+            "    reg        neuron_we;",
+            "    wire [127:0] spike_bus;",
+            "    wire       estop_tripwire;",
+            "    wire [31:0] martingale_wealth;",
+            "",
+            f"    {opt.module_name} uut (",
+            "        .clk(clk), .rst_n(rst_n),",
+            "        .current_in(current_in), .neuron_addr(neuron_addr), .neuron_we(neuron_we),",
+            "        .spike_bus(spike_bus), .estop_tripwire(estop_tripwire), .martingale_wealth(martingale_wealth)",
+            "    );",
+            "",
+            "    always #5 clk = ~clk; // 100MHz clock",
+            "",
+            "    initial begin",
+            "        clk = 0; rst_n = 0; current_in = 0; neuron_addr = 0; neuron_we = 0;",
+            "        #20 rst_n = 1;",
+            "        #10 neuron_addr = 7'd0; current_in = 16'd300; neuron_we = 1; // Exceeds threshold",
+            "        #10 neuron_we = 0;",
+            "        #10 if (spike_bus[0] == 1'b1) $display(\"[PASS] Spike detected!\");",
+            "        #50 $finish;",
+            "    end",
+            "endmodule",
+            ""
+        ]
+        return "\n".join(tb_code)
+
