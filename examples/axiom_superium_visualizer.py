@@ -1,14 +1,15 @@
 """
-Axiom Core Superium // 101% Full-Spectrum Cognitive Cockpit & Live Arena
-========================================================================
-Interactive graphical showcase demonstrating the full capabilities of Axiom Core:
-  1. Neuromorphic Spiking Reservoir (128 biological LIF neurons with live membrane potentials & raster plot)
-  2. 80-Leaf Hierarchical SIMD Register Tree (8 macro sectors with calibrated conformal sets)
-  3. Formal Mathematical Safety (Ville's Supermartingale Shield & SHA-256 Merkle Flight Recorder)
-  4. Hardware Fieldbus Wires (Automotive CAN-FD & NASDAQ ITCH 5.0 line-rate packet streams)
-  5. Multi-Node Swarm Fabric (Decentralized peer heartbeats & sub-5µs E-STOP arrest)
-  6. Autonomous Kinetic Interceptor Arena (Real-time closed-loop drone control driven by 128-dim tensors)
-  7. High-Throughput Stress-Test Engine (5,000 live decisions benchmarking microsecond latency)
+Axiom Core Superium // 101% Full-Spectrum Cognitive Cockpit & 3D Live Arena
+============================================================================
+Interactive graphical showcase demonstrating 101% of Axiom Core's capabilities in 3D:
+  1. Full 3D Perspective Physical Arena (Quadcopter Drone in 3D Airspace [X, Y, Z])
+  2. 3D 128-Dimensional Spatial Tensor (3D coordinates, 6-DOF velocities, 85 spherical ray-cast LiDAR bins)
+  3. Neuromorphic Spiking Reservoir (128 biological LIF neurons with live membrane potentials & raster plot)
+  4. 80-Leaf Hierarchical SIMD Register Tree (8 macro sectors with calibrated conformal sets)
+  5. 3D Formal Mathematical Safety (Ville's 3D Supermartingale Shield & SHA-256 Merkle Flight Recorder)
+  6. Hardware Fieldbus Wires (Automotive CAN-FD & NASDAQ ITCH 5.0 line-rate packet streams)
+  7. Multi-Node Swarm Fabric (Decentralized peer heartbeats & sub-5µs E-STOP arrest)
+  8. Interactive 3D Orbit Camera (Auto-orbit, click-and-drag rotation, depth zoom)
 
 Run with:
   python examples/axiom_superium_visualizer.py
@@ -19,7 +20,6 @@ import os
 import time
 import math
 import random
-import struct
 import collections
 from typing import List, Tuple, Dict, Any, Optional
 
@@ -119,121 +119,233 @@ MACRO_SECTORS = [
 
 
 # ==============================================================================
-# 3. AUTONOMOUS KINETIC INTERCEPTOR DRONE ARENA
+# 3. AUTONOMOUS 3D KINETIC INTERCEPTOR DRONE ARENA
 # ==============================================================================
-class KineticDroneArena:
-    """2D physical simulation of an autonomous drone navigating dynamic obstacles."""
-    def __init__(self, width: float = 380.0, height: float = 280.0):
-        self.width = width
-        self.height = height
+class KineticDroneArena3D:
+    """
+    3D Physical Simulation of an Autonomous Kinetic Interceptor Drone.
+    Operates in a 3D airspace bounding volume (X in [-160, 160], Y in [0, 160], Z in [-160, 160]),
+    featuring continuous 6-DOF physics, perspective projection, and 128-dim spatial tensor encoding.
+    """
+    def __init__(self, x_span: float = 160.0, y_span: float = 160.0, z_span: float = 160.0):
+        self.x_span = x_span  # Lateral width
+        self.y_span = y_span  # Altitude (Ground at Y=0, Ceiling at Y=160)
+        self.z_span = z_span  # Longitudinal depth
+        
+        # 3D Perspective Camera parameters
+        self.cam_yaw = 0.55    # Azimuth rotation around vertical Y
+        self.cam_pitch = 0.38  # Elevation angle looking downward
+        self.cam_dist = 420.0  # Camera distance
+        self.cam_fov = 360.0   # Focal length
+        self.auto_orbit = True # Automatic smooth orbit
+
         self.reset()
 
     def reset(self):
-        self.drone_pos = [self.width / 2.0, self.height / 2.0]
-        self.drone_vel = [0.0, 0.0]
-        self.drone_heading = 0.0
-        self.target_pos = [random.uniform(40, self.width - 40), random.uniform(40, self.height - 40)]
+        # 3D Drone state (X=lateral, Y=altitude, Z=depth)
+        self.drone_pos = [0.0, 75.0, 0.0]
+        self.drone_vel = [0.0, 0.0, 0.0]
+        self.drone_yaw = 0.0
+        self.drone_pitch = 0.0
+        
+        # 3D Energy Target hovering in 3D volume
+        self.target_pos = [
+            random.uniform(-110, 110),
+            random.uniform(40, 140),
+            random.uniform(-110, 110)
+        ]
+        
+        # 3D Dynamic Kinetic Obstacle Spheres
         self.obstacles = [
-            {"pos": [random.uniform(50, self.width - 50), random.uniform(50, self.height - 50)],
-             "vel": [random.uniform(-1.2, 1.2), random.uniform(-1.2, 1.2)],
-             "radius": random.uniform(14, 22)}
-            for _ in range(5)
+            {
+                "pos": [random.uniform(-120, 120), random.uniform(30, 130), random.uniform(-120, 120)],
+                "vel": [random.uniform(-0.8, 0.8), random.uniform(-0.5, 0.5), random.uniform(-0.8, 0.8)],
+                "radius": random.uniform(14.0, 22.0)
+            }
+            for _ in range(6)
         ]
         self.targets_captured = 0
         self.evasions = 0
         self.last_reflex_active = False
 
+    def project(self, x: float, y: float, z: float, sw: float, sh: float) -> Tuple[float, float, float]:
+        """Projects 3D point (x, y, z) into 2D perspective screen coordinates (u, v, scale)."""
+        # Center altitude Y so middle of volume is at Y=0 for rotation
+        dy = y - (self.y_span / 2.0)
+        
+        # 1. Rotate around Y axis (Yaw / Azimuth)
+        x1 = x * math.cos(self.cam_yaw) + z * math.sin(self.cam_yaw)
+        z1 = -x * math.sin(self.cam_yaw) + z * math.cos(self.cam_yaw)
+        
+        # 2. Rotate around X axis (Pitch / Elevation)
+        y2 = dy * math.cos(self.cam_pitch) - z1 * math.sin(self.cam_pitch)
+        z2 = dy * math.sin(self.cam_pitch) + z1 * math.cos(self.cam_pitch)
+        
+        # 3. Perspective depth scaling
+        depth = self.cam_dist + z2
+        if depth < 10.0:
+            depth = 10.0
+        scale = self.cam_fov / depth
+        
+        u = sw / 2.0 + x1 * scale
+        v = sh / 2.0 - y2 * scale
+        return u, v, scale
+
     def get_128d_spatial_tensor(self) -> List[float]:
-        """Encodes drone perception into continuous 128-dimensional feature vector."""
+        """Encodes complete 3D physical world into a continuous 128-dimensional spatial feature vector."""
         vec = [0.0] * 128
-        dx = (self.target_pos[0] - self.drone_pos[0]) / self.width
-        dy = (self.target_pos[1] - self.drone_pos[1]) / self.height
-        dist_target = math.hypot(dx, dy)
-
-        vec[0] = self.drone_pos[0] / self.width
-        vec[1] = self.drone_pos[1] / self.height
-        vec[2] = self.drone_vel[0] / 5.0
-        vec[3] = self.drone_vel[1] / 5.0
-        vec[4] = dx
-        vec[5] = dy
-        vec[6] = dist_target
-        vec[7] = math.cos(self.drone_heading)
-        vec[8] = math.sin(self.drone_heading)
-
-        # Distance to boundaries
-        vec[9] = self.drone_pos[0] / self.width
-        vec[10] = (self.width - self.drone_pos[0]) / self.width
-        vec[11] = self.drone_pos[1] / self.height
-        vec[12] = (self.height - self.drone_pos[1]) / self.height
-
-        # Encode nearest obstacles in slots 16..64
-        slot = 16
-        for obs in self.obstacles:
-            if slot + 4 <= 64:
-                ox = (obs["pos"][0] - self.drone_pos[0]) / self.width
-                oy = (obs["pos"][1] - self.drone_pos[1]) / self.height
-                d = math.hypot(ox, oy)
-                vec[slot] = ox
-                vec[slot + 1] = oy
-                vec[slot + 2] = d
-                vec[slot + 3] = obs["radius"] / 30.0
-                slot += 4
-
-        # Local spatial sensory radar in slots 64..127
-        for a_idx in range(64):
-            angle = (2.0 * math.pi * a_idx) / 64.0
-            rx = self.drone_pos[0] + math.cos(angle) * 45.0
-            ry = self.drone_pos[1] + math.sin(angle) * 45.0
-            # Distance penalty if laser touches obstacle
-            min_d = 1.0
+        px, py, pz = self.drone_pos
+        vx, vy, vz = self.drone_vel
+        tx, ty, tz = self.target_pos
+        
+        # Dims 0..2: 3D Normalized Position
+        vec[0] = px / self.x_span
+        vec[1] = py / self.y_span
+        vec[2] = pz / self.z_span
+        
+        # Dims 3..5: 3D Normalized Velocity
+        vec[3] = vx / 6.0
+        vec[4] = vy / 6.0
+        vec[5] = vz / 6.0
+        
+        # Dims 6..8: 3D Relative Vector to Target
+        dx = (tx - px) / (2.0 * self.x_span)
+        dy = (ty - py) / (self.y_span)
+        dz = (tz - pz) / (2.0 * self.z_span)
+        dist_3d = math.sqrt((tx - px)**2 + (ty - py)**2 + (tz - pz)**2)
+        vec[6] = dx
+        vec[7] = dy
+        vec[8] = dz
+        vec[9] = dist_3d / 400.0
+        
+        # Dims 10..12: Orientation
+        vec[10] = math.cos(self.drone_yaw)
+        vec[11] = math.sin(self.drone_yaw)
+        vec[12] = math.sin(self.drone_pitch)
+        
+        # Dims 13..18: 6 Airspace Boundary Clearances
+        vec[13] = py / self.y_span                       # Ground clearance (Altitude)
+        vec[14] = (self.y_span - py) / self.y_span       # Ceiling clearance
+        vec[15] = (px + self.x_span) / (2 * self.x_span) # West wall
+        vec[16] = (self.x_span - px) / (2 * self.x_span) # East wall
+        vec[17] = (pz + self.z_span) / (2 * self.z_span) # South wall
+        vec[18] = (self.z_span - pz) / (2 * self.z_span) # North wall
+        
+        # Dims 19..42: 6 Nearest 3D Obstacles [dx, dy, dz, radius]
+        slot = 19
+        for obs in self.obstacles[:6]:
+            ox, oy, oz = obs["pos"]
+            r = obs["radius"]
+            d = math.sqrt((ox - px)**2 + (oy - py)**2 + (oz - pz)**2)
+            vec[slot] = (ox - px) / self.x_span
+            vec[slot + 1] = (oy - py) / self.y_span
+            vec[slot + 2] = (oz - pz) / self.z_span
+            vec[slot + 3] = r / 30.0
+            slot += 4
+            
+        # Dims 43..127: 3D Spherical Ray-Cast LiDAR Shell (85 3D spatial rays)
+        for ray_idx in range(85):
+            golden_ratio = (1.0 + math.sqrt(5.0)) / 2.0
+            theta = 2.0 * math.pi * ray_idx / golden_ratio
+            phi = math.acos(1.0 - 2.0 * (ray_idx + 0.5) / 85.0)
+            
+            rx = math.sin(phi) * math.cos(theta)
+            ry = math.cos(phi)
+            rz = math.sin(phi) * math.sin(theta)
+            
+            ray_len = 50.0
+            min_dist = 1.0
             for obs in self.obstacles:
-                od = math.hypot(rx - obs["pos"][0], ry - obs["pos"][1]) - obs["radius"]
-                if od < min_d: min_d = od
-            vec[64 + a_idx] = max(0.0, min(1.0, min_d / 30.0))
-
+                ox, oy, oz = obs["pos"]
+                vxo, vyo, vzo = ox - px, oy - py, oz - pz
+                proj = vxo * rx + vyo * ry + vzo * rz
+                if proj > 0:
+                    perp_sq = (vxo**2 + vyo**2 + vzo**2) - proj**2
+                    if perp_sq < (obs["radius"] + 6.0)**2:
+                        d = max(0.0, proj - obs["radius"])
+                        norm_d = d / ray_len
+                        if norm_d < min_dist:
+                            min_dist = norm_d
+            vec[43 + ray_idx] = min_dist
+            
         return vec
 
-    def step(self, thrust_vector: Tuple[float, float], reflex_clamp: bool = False):
-        # Update obstacles
+    def step(self, thrust_vector_3d: Tuple[float, float, float], reflex_clamp: bool = False):
+        """Simulates 3D physics step with inertia, drag, and gravity."""
+        # 1. Update 3D Obstacles
         for obs in self.obstacles:
-            obs["pos"][0] += obs["vel"][0]
-            obs["pos"][1] += obs["vel"][1]
-            if obs["pos"][0] < obs["radius"] or obs["pos"][0] > self.width - obs["radius"]:
+            for axis in range(3):
+                obs["pos"][axis] += obs["vel"][axis]
+            
+            # Bounce off 3D bounding box
+            r = obs["radius"]
+            if obs["pos"][0] < -self.x_span + r or obs["pos"][0] > self.x_span - r:
                 obs["vel"][0] *= -1.0
-            if obs["pos"][1] < obs["radius"] or obs["pos"][1] > self.height - obs["radius"]:
+            if obs["pos"][1] < r or obs["pos"][1] > self.y_span - r:
                 obs["vel"][1] *= -1.0
-
-        # Apply thrust
-        tx, ty = thrust_vector
+            if obs["pos"][2] < -self.z_span + r or obs["pos"][2] > self.z_span - r:
+                obs["vel"][2] *= -1.0
+                
+        # 2. Camera Auto-Orbit
+        if self.auto_orbit:
+            self.cam_yaw += 0.005 # Smooth continuous rotation
+            
+        # 3. Apply 3D Thrust
+        tx, ty, tz = thrust_vector_3d
         if reflex_clamp:
-            # Reflexive emergency impulse away from closest obstacle
-            tx *= -1.8
-            ty *= -1.8
+            # Reflexive 3D Emergency Hover / Evasive Climb:
+            # Reverses horizontal movement and commands immediate vertical climb
+            tx *= -2.0
+            ty = 2.4 # Instant altitude pull-up
+            tz *= -2.0
             self.last_reflex_active = True
             self.evasions += 1
         else:
             self.last_reflex_active = False
-
-        self.drone_vel[0] = (self.drone_vel[0] + tx * 0.4) * 0.92
-        self.drone_vel[1] = (self.drone_vel[1] + ty * 0.4) * 0.92
-
+            
+        # Hover gravity compensation (+0.08 upward bias)
+        self.drone_vel[0] = (self.drone_vel[0] + tx * 0.45) * 0.91
+        self.drone_vel[1] = (self.drone_vel[1] + ty * 0.45 + 0.08) * 0.91
+        self.drone_vel[2] = (self.drone_vel[2] + tz * 0.45) * 0.91
+        
         self.drone_pos[0] += self.drone_vel[0]
         self.drone_pos[1] += self.drone_vel[1]
-
-        # Constrain within bounds
-        margin = 12
-        if self.drone_pos[0] < margin: self.drone_pos[0] = margin; self.drone_vel[0] *= -0.5
-        if self.drone_pos[0] > self.width - margin: self.drone_pos[0] = self.width - margin; self.drone_vel[0] *= -0.5
-        if self.drone_pos[1] < margin: self.drone_pos[1] = margin; self.drone_vel[1] *= -0.5
-        if self.drone_pos[1] > self.height - margin: self.drone_pos[1] = self.height - margin; self.drone_vel[1] *= -0.5
-
-        if abs(self.drone_vel[0]) > 0.05 or abs(self.drone_vel[1]) > 0.05:
-            self.drone_heading = math.atan2(self.drone_vel[1], self.drone_vel[0])
-
-        # Check target capture
-        if math.hypot(self.drone_pos[0] - self.target_pos[0], self.drone_pos[1] - self.target_pos[1]) < 18.0:
+        self.drone_pos[2] += self.drone_vel[2]
+        
+        # 4. Airspace Boundary Clamping
+        pad = 14.0
+        if self.drone_pos[0] < -self.x_span + pad:
+            self.drone_pos[0] = -self.x_span + pad; self.drone_vel[0] *= -0.4
+        if self.drone_pos[0] > self.x_span - pad:
+            self.drone_pos[0] = self.x_span - pad; self.drone_vel[0] *= -0.4
+            
+        if self.drone_pos[1] < pad: # Ground floor
+            self.drone_pos[1] = pad; self.drone_vel[1] = max(0.0, self.drone_vel[1] * -0.4)
+        if self.drone_pos[1] > self.y_span - pad: # Ceiling
+            self.drone_pos[1] = self.y_span - pad; self.drone_vel[1] *= -0.4
+            
+        if self.drone_pos[2] < -self.z_span + pad:
+            self.drone_pos[2] = -self.z_span + pad; self.drone_vel[2] *= -0.4
+        if self.drone_pos[2] > self.z_span - pad:
+            self.drone_pos[2] = self.z_span - pad; self.drone_vel[2] *= -0.4
+            
+        # Update 3D Heading & Pitch
+        horiz_speed = math.hypot(self.drone_vel[0], self.drone_vel[2])
+        if horiz_speed > 0.05:
+            self.drone_yaw = math.atan2(self.drone_vel[0], self.drone_vel[2])
+        self.drone_pitch = math.atan2(self.drone_vel[1], max(0.1, horiz_speed))
+        
+        # 5. Check 3D Target Capture
+        dx = self.drone_pos[0] - self.target_pos[0]
+        dy = self.drone_pos[1] - self.target_pos[1]
+        dz = self.drone_pos[2] - self.target_pos[2]
+        if math.sqrt(dx*dx + dy*dy + dz*dz) < 22.0:
             self.targets_captured += 1
-            self.target_pos = [random.uniform(40, self.width - 40), random.uniform(40, self.height - 40)]
+            self.target_pos = [
+                random.uniform(-110, 110),
+                random.uniform(35, 145),
+                random.uniform(-110, 110)
+            ]
 
 
 # ==============================================================================
@@ -242,9 +354,9 @@ class KineticDroneArena:
 class AxiomSuperiumVisualizerApp:
     def __init__(self, root: tk.Tk):
         self.root = root
-        self.root.title("Axiom Core Superium // 101% Full-Spectrum Cognitive Cockpit")
+        self.root.title("Axiom Core Superium // 101% Full-Spectrum Cognitive Cockpit (3D Edition)")
         self.root.configure(bg="#070A10")
-        self.root.geometry("1400x860")
+        self.root.geometry("1420x880")
         self.root.minsize(1280, 800)
 
         # Core subsystems
@@ -254,7 +366,7 @@ class AxiomSuperiumVisualizerApp:
         self.swarm = SwarmReflexFabric(node_id=1, cluster_id=101)
         self.crdt = CrdtRegisterTree(node_id=1)
         self.hud = AxiomTelemetryHUD()
-        self.arena = KineticDroneArena()
+        self.arena = KineticDroneArena3D()
 
         # State tracking
         self.total_decisions = 0
@@ -267,6 +379,10 @@ class AxiomSuperiumVisualizerApp:
         self.current_leaf_name = "Emergency_Brake_Clamp"
         self.conformal_singleton = True
         self.active_tier_name = "Tier 2: Neuromorphic Flow"
+
+        # Mouse drag tracking for 3D camera
+        self.drag_start_x = 0
+        self.drag_start_y = 0
 
         # CAN and ITCH stream buffers
         self.last_can_torque = 14.5
@@ -292,7 +408,7 @@ class AxiomSuperiumVisualizerApp:
         top_bar.pack(fill="x", side="top")
 
         tk.Label(top_bar, text="AXIOM CORE SUPERIUM v2.0", font=self.title_font, fg="#00E5FF", bg="#0D131F").pack(side="left")
-        tk.Label(top_bar, text=" [101% FULL-SPECTRUM COGNITIVE COCKPIT] ", font=self.badge_font, fg="#00FF88", bg="#0D131F").pack(side="left", padx=10)
+        tk.Label(top_bar, text=" [101% 3D COGNITIVE COCKPIT & LIVE ARENA] ", font=self.badge_font, fg="#00FF88", bg="#0D131F").pack(side="left", padx=10)
 
         # Status Badges
         status_box = tk.Frame(top_bar, bg="#0D131F")
@@ -308,7 +424,7 @@ class AxiomSuperiumVisualizerApp:
         main_content = tk.Frame(self.root, bg="#070A10", padx=8, pady=8)
         main_content.pack(fill="both", expand=True)
         main_content.columnconfigure(0, weight=3) # Left: Neuromorphic Reservoir & Register Tree
-        main_content.columnconfigure(1, weight=4) # Center: Autonomous Interceptor Arena
+        main_content.columnconfigure(1, weight=4) # Center: 3D Autonomous Interceptor Arena
         main_content.columnconfigure(2, weight=3) # Right: Mathematical Safety & Hardware Wire Buses
         main_content.rowconfigure(0, weight=1)
 
@@ -350,29 +466,45 @@ class AxiomSuperiumVisualizerApp:
         self.lbl_conformal_info.pack(anchor="w")
 
         # ======================================================================
-        # COLUMN 1: AUTONOMOUS KINETIC INTERCEPTOR ARENA (CENTER STAGE)
+        # COLUMN 1: AUTONOMOUS 3D KINETIC INTERCEPTOR ARENA (CENTER STAGE)
         # ======================================================================
         col_center = tk.Frame(main_content, bg="#070A10")
         col_center.grid(row=0, column=1, sticky="nsew", padx=4)
 
-        box_arena = tk.LabelFrame(col_center, text=" [ 3. CLOSED-LOOP AUTONOMOUS ARENA (128-DIM TENSOR) ] ", font=self.section_font, fg="#00E5FF", bg="#0D131F", padx=8, pady=8)
+        box_arena = tk.LabelFrame(col_center, text=" [ 3. CLOSED-LOOP AUTONOMOUS 3D ARENA (128-DIM TENSOR) ] ", font=self.section_font, fg="#00E5FF", bg="#0D131F", padx=8, pady=8)
         box_arena.pack(fill="both", expand=True)
 
-        tk.Label(box_arena, text="Drone Piloted Live by Axiom Core (Click arena to drop kinetic obstacles)", font=self.small_font, fg="#64748B", bg="#0D131F").pack(anchor="w", pady=(0, 4))
+        # 3D Camera Controls Toolbar
+        cam_bar = tk.Frame(box_arena, bg="#0D131F")
+        cam_bar.pack(fill="x", pady=(0, 4))
+        
+        self.btn_orbit = tk.Button(cam_bar, text="Orbit Camera: ON", font=self.small_font, bg="#1E293B", fg="#00FF88", command=self._toggle_orbit, width=15)
+        self.btn_orbit.pack(side="left", padx=2)
+        tk.Button(cam_bar, text="Reset 3D View", font=self.small_font, bg="#1E293B", fg="#F1F5F9", command=self._reset_camera, width=13).pack(side="left", padx=2)
+        tk.Button(cam_bar, text="+ Drop 3D Obstacle", font=self.small_font, bg="#1E293B", fg="#F59E0B", command=self._spawn_3d_obstacle, width=16).pack(side="left", padx=2)
+        
+        self.lbl_cam_angles = tk.Label(cam_bar, text="Yaw: 32° | Pitch: 22° | Zoom: 420m", font=self.small_font, fg="#64748B", bg="#0D131F")
+        self.lbl_cam_angles.pack(side="right")
 
         self.canvas_arena = tk.Canvas(box_arena, width=420, height=360, bg="#05070C", highlightthickness=1, highlightbackground="#1E293B")
         self.canvas_arena.pack(fill="both", expand=True)
-        self.canvas_arena.bind("<Button-1>", self._on_arena_click)
+        
+        # Bind Mouse Interactions for 3D Camera
+        self.canvas_arena.bind("<ButtonPress-1>", self._on_3d_drag_start)
+        self.canvas_arena.bind("<B1-Motion>", self._on_3d_drag_move)
+        self.canvas_arena.bind("<MouseWheel>", self._on_3d_mouse_wheel)
 
-        # Arena Live Telemetry Ribbon
+        # 3D Arena Live Telemetry Ribbon
         arena_ribbon = tk.Frame(box_arena, bg="#111827", padx=8, pady=6, bd=1, relief=tk.SOLID)
         arena_ribbon.pack(fill="x", pady=(6, 0))
 
-        self.lbl_arena_targets = tk.Label(arena_ribbon, text="Targets: 0", font=self.data_font, fg="#00FF88", bg="#111827")
+        self.lbl_arena_targets = tk.Label(arena_ribbon, text="3D Targets: 0", font=self.data_font, fg="#00FF88", bg="#111827")
         self.lbl_arena_targets.pack(side="left", padx=6)
-        self.lbl_arena_evasions = tk.Label(arena_ribbon, text="Reflex Evasions: 0", font=self.data_font, fg="#F59E0B", bg="#111827")
+        self.lbl_arena_alt = tk.Label(arena_ribbon, text="Altitude: 75m", font=self.data_font, fg="#38BDF8", bg="#111827")
+        self.lbl_arena_alt.pack(side="left", padx=6)
+        self.lbl_arena_evasions = tk.Label(arena_ribbon, text="Reflex Climbs: 0", font=self.data_font, fg="#F59E0B", bg="#111827")
         self.lbl_arena_evasions.pack(side="left", padx=6)
-        self.lbl_arena_tier = tk.Label(arena_ribbon, text="Active Tier: Tier 2 (Neuromorphic)", font=self.data_font, fg="#38BDF8", bg="#111827")
+        self.lbl_arena_tier = tk.Label(arena_ribbon, text="Active Tier: Tier 2 (Neuromorphic)", font=self.data_font, fg="#00E5FF", bg="#111827")
         self.lbl_arena_tier.pack(side="right", padx=6)
 
         # Control Action Buttons
@@ -383,9 +515,9 @@ class AxiomSuperiumVisualizerApp:
 
         sub_btns = tk.Frame(btn_bar, bg="#0D131F")
         sub_btns.pack(fill="x")
-        tk.Button(sub_btns, text="Inject Sensor Fault / Drift", font=self.small_font, bg="#BE123C", fg="#FFFFFF", command=self._inject_drift_anomaly, width=22).pack(side="left", padx=2, pady=2)
-        tk.Button(sub_btns, text="Reset Safety Wealth", font=self.small_font, bg="#334155", fg="#CBD5E1", command=self._reset_martingale, width=18).pack(side="left", padx=2, pady=2)
-        tk.Button(sub_btns, text="Reset Arena Drone", font=self.small_font, bg="#334155", fg="#CBD5E1", command=self.arena.reset, width=16).pack(side="right", padx=2, pady=2)
+        tk.Button(sub_btns, text="Inject 3D Sensor Drift / Fault", font=self.small_font, bg="#BE123C", fg="#FFFFFF", command=self._inject_drift_anomaly, width=25).pack(side="left", padx=2, pady=2)
+        tk.Button(sub_btns, text="Reset Safety Wealth", font=self.small_font, bg="#334155", fg="#CBD5E1", command=self._reset_martingale, width=17).pack(side="left", padx=2, pady=2)
+        tk.Button(sub_btns, text="Reset 3D Drone", font=self.small_font, bg="#334155", fg="#CBD5E1", command=self.arena.reset, width=15).pack(side="right", padx=2, pady=2)
 
         # ======================================================================
         # COLUMN 2: MATHEMATICAL SAFETY & HARDWARE WIRE BUSES
@@ -452,20 +584,53 @@ class AxiomSuperiumVisualizerApp:
         self.lbl_latency_p99 = tk.Label(bottom_strip, text="Mean Latency: 8.4 µs  |  P99 SLA: 18.2 µs", font=self.small_font, fg="#38BDF8", bg="#0D131F")
         self.lbl_latency_p99.pack(side="right")
 
-    def _on_arena_click(self, event):
-        """User drops a dynamic kinetic obstacle into the arena."""
+    # ==========================================================================
+    # 3D CAMERA INTERACTIVE HANDLERS
+    # ==========================================================================
+    def _toggle_orbit(self):
+        self.arena.auto_orbit = not self.arena.auto_orbit
+        state_str = "ON" if self.arena.auto_orbit else "OFF"
+        self.btn_orbit.config(text=f"Orbit Camera: {state_str}", fg="#00FF88" if self.arena.auto_orbit else "#94A3B8")
+
+    def _reset_camera(self):
+        self.arena.cam_yaw = 0.55
+        self.arena.cam_pitch = 0.38
+        self.arena.cam_dist = 420.0
+
+    def _spawn_3d_obstacle(self):
         self.arena.obstacles.append({
-            "pos": [float(event.x), float(event.y)],
-            "vel": [random.uniform(-1.5, 1.5), random.uniform(-1.5, 1.5)],
-            "radius": random.uniform(16, 24)
+            "pos": [random.uniform(-110, 110), random.uniform(30, 130), random.uniform(-110, 110)],
+            "vel": [random.uniform(-0.8, 0.8), random.uniform(-0.5, 0.5), random.uniform(-0.8, 0.8)],
+            "radius": random.uniform(14.0, 22.0)
         })
-        if len(self.arena.obstacles) > 8:
+        if len(self.arena.obstacles) > 9:
             self.arena.obstacles.pop(0)
 
+    def _on_3d_drag_start(self, event):
+        self.drag_start_x = event.x
+        self.drag_start_y = event.y
+
+    def _on_3d_drag_move(self, event):
+        dx = event.x - self.drag_start_x
+        dy = event.y - self.drag_start_y
+        self.drag_start_x = event.x
+        self.drag_start_y = event.y
+        
+        # User manual drag pauses auto-orbit
+        self.arena.auto_orbit = False
+        self.btn_orbit.config(text="Orbit Camera: OFF", fg="#94A3B8")
+        
+        self.arena.cam_yaw += dx * 0.008
+        self.arena.cam_pitch = max(0.05, min(1.35, self.arena.cam_pitch - dy * 0.008))
+
+    def _on_3d_mouse_wheel(self, event):
+        delta = event.delta if hasattr(event, "delta") and event.delta != 0 else (120 if event.num == 4 else -120)
+        self.arena.cam_dist = max(220.0, min(800.0, self.arena.cam_dist - delta * 0.3))
+
     def _inject_drift_anomaly(self):
-        """Simulates sensor drift or hardware attack."""
+        """Simulates 3D sensor drift or turbulence attack."""
         self.anomaly_injected = True
-        self.martingale.wealth = 78.50 # Drive wealth up toward barrier
+        self.martingale.wealth = 78.50
 
     def _reset_martingale(self):
         self.anomaly_injected = False
@@ -477,13 +642,9 @@ class AxiomSuperiumVisualizerApp:
         latencies = []
         for _ in range(5000):
             t0 = time.perf_counter()
-            # 1. 128d tensor simulation
             vec = [random.random() for _ in range(128)]
-            # 2. LIF step
             spk = self.reservoir.step(vec[:16], dt=0.5)
-            # 3. Martingale step
             self.martingale.update(vec[:8])
-            # 4. Merkle record
             self.merkle.record_decision(self.total_decisions, 701, "StressVector", 0.99, 5.0, self.martingale.wealth)
             self.total_decisions += 1
             lat_us = (time.perf_counter() - t0) * 1_000_000.0
@@ -499,7 +660,7 @@ class AxiomSuperiumVisualizerApp:
         self.lbl_latency_p99.config(text=f"Mean Latency: {avg_lat:.2f} µs  |  P99 SLA: {p99_lat:.2f} µs")
 
     # ==========================================================================
-    # MAIN ANIMATION & SIMULATION LOOP (60 FPS)
+    # MAIN ANIMATION & SIMULATION LOOP (50 FPS)
     # ==========================================================================
     def _start_main_loop(self):
         def loop():
@@ -510,30 +671,30 @@ class AxiomSuperiumVisualizerApp:
                 self._render_arena_canvas()
                 self._render_martingale_canvas()
                 self._render_swarm_canvas()
-            self.root.after(20, loop) # ~50 FPS
+            self.root.after(20, loop)
         loop()
 
     def _update_simulation_step(self):
         t0 = time.perf_counter()
 
-        # 1. Capture 128-dim perception tensor from physical arena
+        # 1. Capture 128-dim 3D spatial tensor from physical arena
         tensor_128d = self.arena.get_128d_spatial_tensor()
 
-        # 2. Biological SNN Spiking Reservoir Step
+        # 2. Biological SNN Spiking Reservoir Step (Injected from 3D LiDAR Shell)
         spikes = self.reservoir.step(tensor_128d[:32], dt=0.5)
 
-        # 3. 80-Leaf Register Tree Evaluation
-        # Determine winning sector and leaf based on spatial gradients
+        # 3. 3D Obstacle Proximity & Emergency Check
+        px, py, pz = self.arena.drone_pos
         dist_to_nearest = min(
-            (math.hypot(obs["pos"][0] - self.arena.drone_pos[0], obs["pos"][1] - self.arena.drone_pos[1]) - obs["radius"]
+            (math.sqrt((obs["pos"][0] - px)**2 + (obs["pos"][1] - py)**2 + (obs["pos"][2] - pz)**2) - obs["radius"]
              for obs in self.arena.obstacles),
             default=100.0
         )
 
-        if dist_to_nearest < 28.0:
+        if dist_to_nearest < 28.0 or py < 22.0:
             self.current_sector_idx = 7 # Robotics Fieldbus
             self.current_leaf_name = "Emergency_Brake_Clamp"
-            self.active_tier_name = "Tier 0: Anti-Collision Reflex"
+            self.active_tier_name = "Tier 0: 3D Anti-Collision Climb"
             is_emergency = True
         elif dist_to_nearest < 50.0:
             self.current_sector_idx = 7
@@ -543,10 +704,10 @@ class AxiomSuperiumVisualizerApp:
         else:
             self.current_sector_idx = 5 # Desktop / Autonomous Navigation
             self.current_leaf_name = "Trajectory_Target_Seek"
-            self.active_tier_name = "Tier 3: Conformal Safe Target"
+            self.active_tier_name = "Tier 3: 3D Target Intercept"
             is_emergency = False
 
-        # 4. Ville's Martingale Safety Shield
+        # 4. Ville's 3D Martingale Safety Shield
         if self.anomaly_injected or is_emergency:
             self.martingale.wealth = min(120.0, self.martingale.wealth * 1.15)
         else:
@@ -555,13 +716,14 @@ class AxiomSuperiumVisualizerApp:
         self.wealth_history.append(self.martingale.wealth)
         barrier_tripped = (self.martingale.wealth >= self.martingale.rejection_threshold)
 
-        # 5. Autonomous Actuation
-        dx = self.arena.target_pos[0] - self.arena.drone_pos[0]
-        dy = self.arena.target_pos[1] - self.arena.drone_pos[1]
-        dist = math.hypot(dx, dy)
-        thrust = (dx / max(1.0, dist), dy / max(1.0, dist))
+        # 5. Autonomous 3D Actuation (Thrust in X, Y, Z)
+        tx = self.arena.target_pos[0] - px
+        ty = self.arena.target_pos[1] - py
+        tz = self.arena.target_pos[2] - pz
+        dist_3d = math.sqrt(tx*tx + ty*ty + tz*tz)
+        thrust_3d = (tx / max(1.0, dist_3d), ty / max(1.0, dist_3d), tz / max(1.0, dist_3d))
 
-        self.arena.step(thrust, reflex_clamp=(barrier_tripped or is_emergency))
+        self.arena.step(thrust_3d, reflex_clamp=(barrier_tripped or is_emergency))
 
         # Latency computation
         lat_us = (time.perf_counter() - t0) * 1_000_000.0
@@ -573,8 +735,8 @@ class AxiomSuperiumVisualizerApp:
 
         # 7. Hardware Feeds Simulation
         self.last_can_torque = round(12.0 + 4.0 * math.sin(self.total_decisions * 0.1), 2)
-        self.last_can_steer = round(math.degrees(self.arena.drone_heading), 1)
-        self.lbl_can_data.config(text=f"Motor Torque: {self.last_can_torque:5.2f} Nm  |  Steering: {self.last_can_steer:5.1f}°  |  DLC: 8  |  Rate: 500kbps")
+        self.last_can_steer = round(math.degrees(self.arena.drone_yaw), 1)
+        self.lbl_can_data.config(text=f"Motor Torque: {self.last_can_torque:5.2f} Nm  |  Yaw: {self.last_can_steer:5.1f}°  |  Rate: 500kbps")
 
         stock = random.choice(["NVDA", "AAPL", "MSFT", "GOOGL"])
         price = round(140.0 + random.uniform(0.1, 5.0), 2)
@@ -585,15 +747,21 @@ class AxiomSuperiumVisualizerApp:
         self.lbl_total_decisions.config(text=f"Total Autonomous Decisions: {self.total_decisions:,}")
         self.lbl_wealth_val.config(text=f"Wealth M_t: {self.martingale.wealth:.4f}")
         if barrier_tripped:
-            self.lbl_barrier_val.config(text="BARRIER BREACHED: ACTUATOR ARREST [TRIPPED]", fg="#EF4444")
+            self.lbl_barrier_val.config(text="BARRIER BREACHED: 3D CLIMB REFLEX [TRIPPED]", fg="#EF4444")
         else:
             self.lbl_barrier_val.config(text="Barrier (1/alpha): 100.00 [SAFE]", fg="#00FF88")
 
         self.lbl_leaf_winner.config(text=f"Winning Leaf: {self.current_leaf_name}")
         self.lbl_merkle_hex.config(text=self.merkle.root_hash[:38] + "...")
-        self.lbl_arena_targets.config(text=f"Targets: {self.arena.targets_captured}")
-        self.lbl_arena_evasions.config(text=f"Reflex Evasions: {self.arena.evasions}")
+        self.lbl_arena_targets.config(text=f"3D Targets: {self.arena.targets_captured}")
+        self.lbl_arena_alt.config(text=f"Altitude: {py:.0f}m")
+        self.lbl_arena_evasions.config(text=f"Reflex Climbs: {self.arena.evasions}")
         self.lbl_arena_tier.config(text=f"Active Tier: {self.active_tier_name}")
+        
+        # Camera angle readout
+        yaw_deg = int(math.degrees(self.arena.cam_yaw) % 360)
+        pitch_deg = int(math.degrees(self.arena.cam_pitch))
+        self.lbl_cam_angles.config(text=f"Yaw: {yaw_deg}° | Pitch: {pitch_deg}° | Zoom: {self.arena.cam_dist:.0f}m")
 
     # ==========================================================================
     # RENDERING ENGINE
@@ -601,7 +769,6 @@ class AxiomSuperiumVisualizerApp:
     def _render_snn_canvas(self):
         c = self.canvas_snn
         c.delete("all")
-        # 16 columns x 8 rows = 128 neurons
         cols, rows = 16, 8
         cell_w, cell_h = 22, 14
 
@@ -614,7 +781,6 @@ class AxiomSuperiumVisualizerApp:
             y2 = y1 + cell_h - 3
 
             v = self.reservoir.voltages[i]
-            # Color gradient: -70 (blue) -> -60 (cyan) -> -52 (yellow) -> spike (white/pink)
             if self.reservoir.spikes[i]:
                 color = "#FF007F" # Brilliant spike flash
             elif v >= -52.0:
@@ -633,12 +799,10 @@ class AxiomSuperiumVisualizerApp:
         c.delete("all")
         w = c.winfo_width() or 380
 
-        # Draw 8 Sector Activation Bars
         for s_idx, (sec_name, leaves) in enumerate(MACRO_SECTORS):
             y = 12 + s_idx * 23
             c.create_text(10, y + 6, anchor="w", text=sec_name, font=self.small_font, fill="#94A3B8")
             
-            # Activation width
             is_active = (s_idx == self.current_sector_idx)
             ratio = random.uniform(0.75, 0.98) if is_active else random.uniform(0.05, 0.25)
             bar_w = int(ratio * (w - 180))
@@ -649,47 +813,131 @@ class AxiomSuperiumVisualizerApp:
             c.create_text(155 + bar_w + 4, y + 6, anchor="w", text=pct_txt, font=self.small_font, fill="#64748B" if not is_active else "#00FF88")
 
     def _render_arena_canvas(self):
+        """Renders 3D Perspective Airspace Arena with Depth Occlusion."""
         c = self.canvas_arena
         c.delete("all")
         w = float(c.winfo_width() or 420)
         h = float(c.winfo_height() or 360)
+        arena = self.arena
 
-        # Draw laser boundary
-        c.create_rectangle(4, 4, w - 4, h - 4, outline="#1E293B", width=2)
+        # 1. Draw 3D Ground Floor Perspective Grid (at Y = 0)
+        for z in range(-160, 161, 40):
+            u1, v1, _ = arena.project(-160, 0, z, w, h)
+            u2, v2, _ = arena.project(160, 0, z, w, h)
+            c.create_line(u1, v1, u2, v2, fill="#0E1726", width=1)
+        for x in range(-160, 161, 40):
+            u1, v1, _ = arena.project(x, 0, -160, w, h)
+            u2, v2, _ = arena.project(x, 0, 160, w, h)
+            c.create_line(u1, v1, u2, v2, fill="#0E1726", width=1)
 
-        # Draw Energy Target
-        tx, ty = self.arena.target_pos
-        c.create_oval(tx - 10, ty - 10, tx + 10, ty + 10, fill="#831843", outline="")
-        c.create_oval(tx - 6, ty - 6, tx + 6, ty + 6, fill="#FF0055", outline="#F43F5E", width=2)
+        # 2. Draw 3D Airspace Bounding Pillars (Pillars at 4 corners)
+        for cx, cz in [(-160, -160), (160, -160), (160, 160), (-160, 160)]:
+            u_b, v_b, _ = arena.project(cx, 0, cz, w, h)
+            u_t, v_t, _ = arena.project(cx, 160, cz, w, h)
+            c.create_line(u_b, v_b, u_t, v_t, fill="#1E293B", dash=(2, 4), width=1)
 
-        # Draw Kinetic Obstacles
-        for obs in self.arena.obstacles:
-            ox, oy = obs["pos"]
-            r = obs["radius"]
-            c.create_oval(ox - r, oy - r, ox + r, oy + r, fill="#1E1B4B", outline="#4338CA", width=2)
-            c.create_oval(ox - 3, oy - 3, ox + 3, oy + 3, fill="#818CF8", outline="")
+        # 3. Draw 3D Ceiling Wireframe Box
+        for p1, p2 in [((-160, 160, -160), (160, 160, -160)),
+                       ((160, 160, -160), (160, 160, 160)),
+                       ((160, 160, 160), (-160, 160, 160)),
+                       ((-160, 160, 160), (-160, 160, -160))]:
+            u1, v1, _ = arena.project(*p1, w, h)
+            u2, v2, _ = arena.project(*p2, w, h)
+            c.create_line(u1, v1, u2, v2, fill="#111827", width=1)
 
-        # Draw Drone
-        dx, dy = self.arena.drone_pos
-        color_drone = "#EF4444" if self.arena.last_reflex_active else "#00FF88"
+        # 4. Draw 3D Energy Target Ground Ring & Pillar
+        tx, ty, tz = arena.target_pos
+        ut_g, vt_g, st_g = arena.project(tx, 0, tz, w, h)
+        rg = 12.0 * st_g
+        c.create_oval(ut_g - rg, vt_g - rg*0.5, ut_g + rg, vt_g + rg*0.5, outline="#831843", width=1)
+        
+        ut, vt, st = arena.project(tx, ty, tz, w, h)
+        c.create_line(ut_g, vt_g, ut, vt, fill="#831843", dash=(2, 2))
+        
+        r_tgt = 8.0 * st
+        c.create_oval(ut - r_tgt - 3, vt - r_tgt - 3, ut + r_tgt + 3, vt + r_tgt + 3, fill="#831843", outline="")
+        c.create_oval(ut - r_tgt, vt - r_tgt, ut + r_tgt, vt + r_tgt, fill="#FF0055", outline="#F43F5E", width=2)
+        c.create_text(ut, vt - r_tgt - 8, text=f"3D TARGET [{ty:.0f}m]", font=self.small_font, fill="#F43F5E")
 
-        # Sensory radar lines
-        for a_idx in range(0, 64, 8):
-            angle = (2.0 * math.pi * a_idx) / 64.0
-            rx = dx + math.cos(angle) * 35.0
-            ry = dy + math.sin(angle) * 35.0
-            c.create_line(dx, dy, rx, ry, fill="#111827", dash=(2, 4))
+        # 5. Depth Sort 3D Obstacles and Drone (Painters Algorithm)
+        render_items = []
+        for obs in arena.obstacles:
+            ox, oy, oz = obs["pos"]
+            depth = math.cos(arena.cam_pitch) * (-ox * math.sin(arena.cam_yaw) + oz * math.cos(arena.cam_yaw))
+            render_items.append(("obs", depth, obs))
+            
+        dx, dy, dz = arena.drone_pos
+        drone_depth = math.cos(arena.cam_pitch) * (-dx * math.sin(arena.cam_yaw) + dz * math.cos(arena.cam_yaw))
+        render_items.append(("drone", drone_depth, None))
+        
+        render_items.sort(key=lambda item: item[1])
 
-        # Velocity vector
-        vx, vy = self.arena.drone_vel
-        c.create_line(dx, dy, dx + vx * 6.0, dy + vy * 6.0, fill="#00E5FF", width=2)
+        # 6. Render Depth-Sorted Objects
+        for item_type, _, data in render_items:
+            if item_type == "obs":
+                obs = data
+                ox, oy, oz = obs["pos"]
+                r = obs["radius"]
+                
+                # Ground shadow at Y=0
+                uo_g, vo_g, so_g = arena.project(ox, 0, oz, w, h)
+                c.create_oval(uo_g - r*so_g*0.8, vo_g - r*so_g*0.4, uo_g + r*so_g*0.8, vo_g + r*so_g*0.4, fill="#0F172A", outline="")
+                
+                # Plumb line connecting obstacle to ground shadow
+                uo, vo, so = arena.project(ox, oy, oz, w, h)
+                c.create_line(uo_g, vo_g, uo, vo, fill="#1E293B", dash=(2, 4))
+                
+                # 3D Sphere in perspective
+                rad_scr = r * so
+                c.create_oval(uo - rad_scr, vo - rad_scr, uo + rad_scr, vo + rad_scr, fill="#1E1B4B", outline="#4338CA", width=2)
+                # 3D specular highlight
+                c.create_oval(uo - rad_scr*0.4, vo - rad_scr*0.5, uo - rad_scr*0.1, vo - rad_scr*0.2, fill="#818CF8", outline="")
+                c.create_text(uo, vo + rad_scr + 8, text=f"{oy:.0f}m", font=self.small_font, fill="#64748B")
 
-        # Drone Body
-        c.create_oval(dx - 8, dy - 8, dx + 8, dy + 8, fill=color_drone, outline="#FFFFFF", width=2)
-        # Heading marker
-        hx = dx + math.cos(self.arena.drone_heading) * 12.0
-        hy = dy + math.sin(self.arena.drone_heading) * 12.0
-        c.create_line(dx, dy, hx, hy, fill="#FFFFFF", width=2)
+            elif item_type == "drone":
+                # Ground shadow at Y=0
+                ud_g, vd_g, sd_g = arena.project(dx, 0, dz, w, h)
+                c.create_oval(ud_g - 14*sd_g, vd_g - 7*sd_g, ud_g + 14*sd_g, vd_g + 7*sd_g, fill="#0F281E", outline="#059669")
+                
+                # Altitude Plumb Line
+                ud, vd, sd = arena.project(dx, dy, dz, w, h)
+                line_color = "#EF4444" if arena.last_reflex_active else "#00FF88"
+                c.create_line(ud_g, vd_g, ud, vd, fill=line_color, dash=(2, 3))
+                
+                # Altitude HUD Badge
+                c.create_text(ud + 28, vd + 6, text=f"ALT: {dy:.0f}m", font=self.badge_font, fill=line_color)
+
+                # 3D Spherical LiDAR Cones
+                for a_idx in range(0, 85, 12):
+                    theta = 2.0 * math.pi * a_idx / 1.618
+                    phi = math.acos(1.0 - 2.0 * (a_idx + 0.5) / 85.0)
+                    rx = dx + math.sin(phi) * math.cos(theta) * 36.0
+                    ry = dy + math.cos(phi) * 36.0
+                    rz = dz + math.sin(phi) * math.sin(theta) * 36.0
+                    ur, vr, _ = arena.project(rx, ry, rz, w, h)
+                    c.create_line(ud, vd, ur, vr, fill="#111827", dash=(2, 4))
+
+                # 3D Velocity Vector
+                vx, vy, vz = arena.drone_vel
+                uv, vv, _ = arena.project(dx + vx * 8.0, dy + vy * 8.0, dz + vz * 8.0, w, h)
+                c.create_line(ud, vd, uv, vv, fill="#00E5FF", width=2)
+
+                # 3D Quadcopter Frame (4 arms in perspective)
+                arm_len = 16.0
+                drone_color = "#EF4444" if arena.last_reflex_active else "#00FF88"
+                for angle_off in [math.pi/4, 3*math.pi/4, 5*math.pi/4, 7*math.pi/4]:
+                    ax = dx + math.cos(arena.drone_yaw + angle_off) * arm_len
+                    ay = dy
+                    az = dz + math.sin(arena.drone_yaw + angle_off) * arm_len
+                    ua, va, sa = arena.project(ax, ay, az, w, h)
+                    c.create_line(ud, vd, ua, va, fill="#94A3B8", width=2)
+                    # Rotor spinning disk
+                    rd = 6.0 * sa
+                    c.create_oval(ua - rd, va - rd*0.5, ua + rd, va + rd*0.5, fill="#0284C7", outline="#38BDF8")
+
+                # Central Drone Avionics Pod
+                r_pod = 8.0 * sd
+                c.create_oval(ud - r_pod, vd - r_pod, ud + r_pod, vd + r_pod, fill=drone_color, outline="#FFFFFF", width=2)
 
     def _render_martingale_canvas(self):
         c = self.canvas_martingale
@@ -711,7 +959,6 @@ class AxiomSuperiumVisualizerApp:
         num_pts = len(self.wealth_history)
         for idx, val in enumerate(self.wealth_history):
             x = (idx / max(1, num_pts - 1)) * w
-            # Map val: 1.0 -> base_y, 100.0 -> thresh_y
             clamped_val = min(110.0, max(0.5, val))
             norm = (clamped_val - 1.0) / 99.0
             y = base_y - norm * (base_y - thresh_y)
@@ -725,7 +972,6 @@ class AxiomSuperiumVisualizerApp:
         c = self.canvas_swarm
         c.delete("all")
         w = 360
-        # 8 Swarm Nodes
         node_w = w / 8.0
         for i in range(8):
             x = i * node_w + 14
