@@ -38,9 +38,13 @@ def run_suite():
     os_tests = loader.discover(os.path.join(os_dir, "tests"), pattern="test_axiom_os.py")
     suite.addTests(os_tests)
 
-    print("[3/3] Loading Axiom Vision Tensor tests...")
+    print("[3/4] Loading Axiom Vision Tensor tests...")
     vision_tests = loader.discover(os.path.join(vision_dir, "tests"), pattern="test_*.py")
     suite.addTests(vision_tests)
+
+    print("[4/4] Loading Autopilot & Showcase tests...")
+    top_tests = loader.discover(os.path.join(root_dir, "tests"), pattern="test_snake_*.py")
+    suite.addTests(top_tests)
 
     print(f"Total test cases registered: {suite.countTestCases()}")
     print("---------------------------------------------------------------------")
