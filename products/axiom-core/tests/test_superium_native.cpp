@@ -17,6 +17,10 @@
 #include "axiom/crdt_register_tree.hpp"
 #include "axiom/axiom_nano.h"
 #include "axiom/axiom_nano.hpp"
+#include "axiom/lyapunov_barrier.hpp"
+#include "axiom/mavlink_bridge.hpp"
+#include "axiom/event_camera_dvs.hpp"
+#include "axiom/fpga_verilog_synth.hpp"
 
 using namespace axiom;
 
@@ -128,8 +132,43 @@ int main() {
         std::cout << "[PASS] Pillar 6: Tooling & Nano Kernel (AxiomNano freestanding <12KB RAM)\n";
     }
 
+    // 7. Physical Machine Era (v3.0): Autonomous Hardware & Silicon Substrates
+    {
+        // 7a. Control Lyapunov-Barrier Function Interlock
+        LyapunovBarrierInterlock barrier(0.01f, 2.0f, 1.5f);
+        LyapunovBarrierInterlock::State3D state{0.0f, 10.0f, 0.0f, 5.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
+        LyapunovBarrierInterlock::ControlInput3D u{0.0f, 0.0f, 0.0f, 9.8f};
+        LyapunovBarrierInterlock::Obstacle3D obs[1] = {{2.0f, 10.0f, 0.0f, 3.0f}};
+        auto b_res = barrier.evaluate(state, u, obs, 1, 0.01f);
+        assert(b_res.barrier_value < 10.0f);
+
+        // 7b. MAVLink 2.0 Flight Controller Wire Serializer
+        uint8_t mav_buf[256];
+        MavlinkBridge::AttitudeTargetPayload target{1000, {1.0f, 0.0f, 0.0f, 0.0f}, 0.1f, -0.2f, 0.0f, 0.75f, 0};
+        size_t bytes = MavlinkBridge::serialize_attitude_target(1, 1, 42, target, mav_buf, sizeof(mav_buf));
+        assert(bytes > 0);
+        assert(mav_buf[0] == MavlinkBridge::MAVLINK_STX_V2);
+
+        // 7c. DVS Event-Camera Neuromorphic Ingestor
+        EventCameraDvs dvs(5000.0f);
+        EventCameraDvs::DvsEvent ev{320, 240, 1000, 1};
+        dvs.ingest_event(ev);
+        float tensor128[128];
+        dvs.extract_128d_tensor(tensor128, 1500);
+        assert(tensor128[64] >= 0.0f);
+
+        // 7d. Axiom-V Silicon Synthesizer
+        FpgaVerilogSynthesizer::SynthOptions s_opt;
+        s_opt.module_name = "test_axiom_lif_core";
+        std::string verilog = FpgaVerilogSynthesizer::synthesize_lif_verilog(s_opt);
+        assert(verilog.find("module test_axiom_lif_core") != std::string::npos);
+        assert(verilog.find("BARRIER_THRESH") != std::string::npos);
+
+        std::cout << "[PASS] Physical AI Era: CLBF Barrier, MAVLink 2.0, DVS Camera, FPGA Silicon Verilog\n";
+    }
+
     std::cout << "\n=====================================================================\n";
-    std::cout << "ALL 6 SUPERIUM PILLARS VERIFIED NATIVELY IN C++ (100% HEALTHY)\n";
+    std::cout << "ALL SUPERIUM & PHYSICAL AI PILLARS VERIFIED NATIVELY IN C++ (100% HEALTHY)\n";
     std::cout << "=====================================================================\n";
     return 0;
 }

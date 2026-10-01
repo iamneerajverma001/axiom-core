@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="axiom-core",
-    version="2.0.0",
+    version="3.0.0",
     packages=find_packages(include=["axiom_core", "axiom_core.*"]),
     install_requires=[
         "pydantic>=2.0.0",

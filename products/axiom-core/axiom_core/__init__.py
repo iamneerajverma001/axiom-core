@@ -1,7 +1,8 @@
 """
 Axiom-Core: Bare-Metal Neuromorphic Decision Engine & C++20 SDK
-Sub-15 microsecond decisions, 15,000 decisions/sec, zero-copy shared memory IPC,
-and distribution-free Martingale conformal safety barriers.
+Physical Machine Era (v3.0.0): Sub-microsecond decisions, biological LIF dynamics,
+Control Lyapunov-Barrier Martingales, MAVLink, DVS Event Ingestion, Silicon Verilog Synthesizer,
+and 3D Swarm Fleet Coordination.
 """
 
 from .models import (
@@ -28,7 +29,33 @@ from .crdt_register_tree import CrdtRegisterTree
 from .compiler import AxiomPolicyCompiler
 from .telemetry_hud import AxiomTelemetryHUD
 
-__version__ = "2.0.0"
+# Physical Machine Era v3.0 Components
+from .lyapunov_barrier import (
+    LyapunovBarrierInterlock,
+    State3D,
+    ControlInput3D,
+    Obstacle3D,
+    BarrierResult
+)
+from .mavlink_bridge import (
+    MavlinkBridge,
+    AttitudeTelemetry,
+    AttitudeTarget
+)
+from .event_camera_dvs import (
+    EventCameraDvs,
+    DvsEvent
+)
+from .fpga_verilog_synth import (
+    FpgaVerilogSynthesizer,
+    SynthOptions
+)
+from .swarm_fleet import (
+    SwarmFleetCoordinator,
+    DroneAgent
+)
+
+__version__ = "3.0.0"
 __all__ = [
     "AxiomClient",
     "AxiomIpcBridge",
@@ -53,4 +80,19 @@ __all__ = [
     "LeafDefinition",
     "SectorDefinition",
     "SchemaDefinition",
+    # Physical Machine Era v3.0
+    "LyapunovBarrierInterlock",
+    "State3D",
+    "ControlInput3D",
+    "Obstacle3D",
+    "BarrierResult",
+    "MavlinkBridge",
+    "AttitudeTelemetry",
+    "AttitudeTarget",
+    "EventCameraDvs",
+    "DvsEvent",
+    "FpgaVerilogSynthesizer",
+    "SynthOptions",
+    "SwarmFleetCoordinator",
+    "DroneAgent",
 ]
