@@ -64,6 +64,12 @@ from .sim2real_bridge import (
     SimState,
     SimCommand
 )
+from .bipedal_locomotion import (
+    BipedalLocomotionReflex,
+    ComState,
+    FootContact,
+    CapturePointResult
+)
 
 __version__ = "3.0.0"
 __all__ = [
@@ -111,4 +117,8 @@ __all__ = [
     "Sim2RealBridge",
     "SimState",
     "SimCommand",
+    "BipedalLocomotionReflex",
+    "ComState",
+    "FootContact",
+    "CapturePointResult",
 ]

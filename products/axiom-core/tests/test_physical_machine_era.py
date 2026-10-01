@@ -36,7 +36,10 @@ from axiom_core import (
     CertificationSpec,
     Sim2RealBridge,
     SimCommand,
-    SimState
+    SimState,
+    BipedalLocomotionReflex,
+    ComState,
+    FootContact
 )
 
 class TestPhysicalMachineEra(unittest.TestCase):
@@ -224,6 +227,24 @@ class TestPhysicalMachineEra(unittest.TestCase):
         tb_code = FpgaVerilogSynthesizer.synthesize_testbench(opt)
         self.assertIn("module tb_axiom_tb_test", tb_code)
         self.assertIn("$finish", tb_code)
+
+    def test_bipedal_locomotion_reflex(self):
+        biped = BipedalLocomotionReflex(height=0.85, alpha=0.001)
+        com = ComState(x=0.0, y=0.0, z=0.85, vx=0.0, vy=0.0, vz=0.0)
+        foot = FootContact(x=0.0, y=0.0, z=0.0, length=0.24, width=0.12, friction_coeff=0.6)
+
+        # Equilibrium stance
+        res_eq = biped.evaluate(com, foot, dt=0.005)
+        self.assertTrue(res_eq.is_stable)
+        self.assertFalse(res_eq.capture_step_required)
+        self.assertGreaterEqual(res_eq.zmp_margin, 0.0)
+
+        # Severe push perturbation (kick Vx = 2.0 m/s)
+        com.vx = 2.0
+        res_kick = biped.evaluate(com, foot, dt=0.005)
+        self.assertTrue(res_kick.capture_step_required)
+        self.assertFalse(res_kick.is_stable)
+        self.assertGreater(res_kick.recommended_step_x, 0.5) # Reaches out to intercept CoM fall
 
 if __name__ == "__main__":
     unittest.main()

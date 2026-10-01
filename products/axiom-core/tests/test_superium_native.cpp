@@ -23,6 +23,7 @@
 #include "axiom/fpga_verilog_synth.hpp"
 #include "axiom/certifier.hpp"
 #include "axiom/sim2real_bridge.hpp"
+#include "axiom/bipedal_locomotion.hpp"
 
 using namespace axiom;
 
@@ -182,7 +183,21 @@ int main() {
         size_t cmd_bytes = Sim2RealBridge::serialize_command(cmd_pkt, cmd_buf, sizeof(cmd_buf));
         assert(cmd_bytes == sizeof(Sim2RealBridge::CommandPacket));
 
-        std::cout << "[PASS] Physical AI Era: CLBF Barrier, MAVLink 2.0, DVS Camera, FPGA Silicon Verilog, Ville-Cert, Sim2Real\n";
+        // 7g. Bipedal Robotic Locomotion Reflex
+        BipedalLocomotionReflex biped(0.85f, 0.001f);
+        BipedalLocomotionReflex::ComState com{0.0f, 0.0f, 0.85f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
+        BipedalLocomotionReflex::FootContact foot{0.0f, 0.0f, 0.0f, 0.24f, 0.12f, 0.6f, true};
+        auto biped_res = biped.evaluate(com, foot, 0.005f);
+        assert(biped_res.is_stable);
+        assert(!biped_res.capture_step_required);
+
+        // Perturb CoM with sudden forward kick (2.5 m/s)
+        com.vx = 2.5f;
+        auto perturb_res = biped.evaluate(com, foot, 0.005f);
+        assert(perturb_res.capture_step_required);
+        assert(perturb_res.recommended_step_x > 0.5f);
+
+        std::cout << "[PASS] Physical AI Era: CLBF Barrier, MAVLink, DVS, FPGA Silicon, Ville-Cert, Sim2Real, Bipedal Reflex\n";
     }
 
     std::cout << "\n=====================================================================\n";
