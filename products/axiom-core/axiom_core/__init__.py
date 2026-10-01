@@ -81,6 +81,22 @@ from .edge_daemon import (
     DaemonConfig,
     DaemonMetrics
 )
+from .seven_axis_arm import SevenAxisArm
+from .full_humanoid import (
+    FullHumanoidReflex,
+    HumanoidState,
+    KeypointFrames,
+    WholeBodyCommand,
+    HEAD_YAW, HEAD_PITCH,
+    TORSO_YAW, TORSO_PITCH, TORSO_ROLL,
+    L_SHOULDER_PITCH, L_SHOULDER_ROLL, L_SHOULDER_YAW,
+    L_ELBOW_PITCH, L_FOREARM_ROLL, L_WRIST_PITCH, L_WRIST_ROLL,
+    R_SHOULDER_PITCH, R_SHOULDER_ROLL, R_SHOULDER_YAW,
+    R_ELBOW_PITCH, R_FOREARM_ROLL, R_WRIST_PITCH, R_WRIST_ROLL,
+    L_HIP_YAW, L_HIP_ROLL, L_HIP_PITCH, L_KNEE_PITCH, L_ANKLE_PITCH, L_ANKLE_ROLL,
+    R_HIP_YAW, R_HIP_ROLL, R_HIP_PITCH, R_KNEE_PITCH, R_ANKLE_PITCH, R_ANKLE_ROLL,
+    PAYLOAD_GRIP, DOF as HUMANOID_DOF
+)
 
 __version__ = "3.0.0"
 __all__ = [
@@ -139,4 +155,11 @@ __all__ = [
     "EdgeDaemonService",
     "DaemonConfig",
     "DaemonMetrics",
+    "SevenAxisArm",
+    "FullHumanoidReflex",
+    "HumanoidState",
+    "KeypointFrames",
+    "WholeBodyCommand",
+    "HUMANOID_DOF"
 ]
+

@@ -26,6 +26,7 @@
 #include "axiom/bipedal_locomotion.hpp"
 #include "axiom/manipulator_reflex.hpp"
 #include "axiom/seven_axis_arm.hpp"
+#include "axiom/full_humanoid.hpp"
 #include "axiom/edge_daemon.hpp"
 
 using namespace axiom;
@@ -233,7 +234,39 @@ int main() {
         assert(arm7_shock.collision_e_stop);
         assert(arm7_shock.cmd_qd[0] == 0.0f);
 
-        std::cout << "[PASS] Physical AI Era: CLBF Barrier, MAVLink, DVS, FPGA Silicon, Ville-Cert, Sim2Real, Bipedal Reflex, 6-DOF & 7-Axis Arms, Edge Daemon\n";
+        // 7k. 32-DOF Full Humanoid Robotics Reflex Kernel (Whole-Body Control & Toughest Tasks)
+        FullHumanoidReflexKernel humanoid(0.88f, 0.001f);
+        FullHumanoidReflexKernel::HumanoidState h_state;
+        auto h_kf = humanoid.forward_kinematics(h_state);
+        assert(h_kf.whole_body_com.z > 0.5f);
+        assert(h_kf.left_hand.y > 0.0f);
+        assert(h_kf.right_hand.y < 0.0f);
+
+        // Nominal evaluation
+        auto h_cmd = humanoid.evaluate(h_state, 0.005f);
+        assert(!h_cmd.capture_step_required);
+        assert(!h_cmd.fall_e_stop_active);
+
+        // Task 1: Heavy payload 15kg box lift -> spine counter-pitch
+        h_state.is_payload_grasped = true;
+        h_state.payload_mass = 15.0f;
+        auto h_load_cmd = humanoid.evaluate(h_state, 0.005f);
+        assert(h_load_cmd.cmd_tau[FullHumanoidReflexKernel::TORSO_PITCH] != 0.0f);
+
+        // Task 2: Ice slip (friction = 0.08, high lateral acceleration)
+        h_state.ground_friction = 0.08f;
+        h_state.pelvis_acc.x = 2.5f; // Lateral shear
+        auto h_ice_cmd = humanoid.evaluate(h_state, 0.005f);
+        assert(h_ice_cmd.ice_slip_detected);
+        assert(h_ice_cmd.capture_step_required);
+
+        // Task 3: Violent kinetic shock -> Ville's Martingale trips E-STOP
+        h_state.tau_ext[FullHumanoidReflexKernel::TORSO_PITCH] = 65.0f;
+        auto h_shock_cmd = humanoid.evaluate(h_state, 0.005f);
+        assert(h_shock_cmd.fall_e_stop_active);
+        assert(h_shock_cmd.cmd_qd[0] == 0.0f);
+
+        std::cout << "[PASS] Physical AI Era: CLBF Barrier, MAVLink, DVS, FPGA Silicon, Ville-Cert, Sim2Real, Bipedal Reflex, 6-DOF & 7-Axis Arms, 32-DOF Full Humanoid, Edge Daemon\n";
     }
 
     std::cout << "\n=====================================================================\n";
