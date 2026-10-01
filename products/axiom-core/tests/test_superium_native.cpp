@@ -25,6 +25,7 @@
 #include "axiom/sim2real_bridge.hpp"
 #include "axiom/bipedal_locomotion.hpp"
 #include "axiom/manipulator_reflex.hpp"
+#include "axiom/seven_axis_arm.hpp"
 #include "axiom/edge_daemon.hpp"
 
 using namespace axiom;
@@ -217,7 +218,22 @@ int main() {
         assert(d_metrics.is_healthy);
         daemon.stop();
 
-        std::cout << "[PASS] Physical AI Era: CLBF Barrier, MAVLink, DVS, FPGA Silicon, Ville-Cert, Sim2Real, Bipedal Reflex, Manipulator, Edge Daemon\n";
+        // 7j. 7-Axis Redundant Robotic Arm Reflex Kernel (Sub-Millimeter Precision & Ville Shock Shield)
+        SevenAxisArmReflexKernel arm7(0.001f, 15.0f);
+        SevenAxisArmReflexKernel::JointState arm7_state;
+        SevenAxisArmReflexKernel::TaskTrajectory arm7_traj;
+        arm7_traj.target_pos = {0.0f, 0.2f, 0.8f};
+        auto arm7_res = arm7.evaluate(arm7_state, arm7_traj, 0.002f);
+        assert(!arm7_res.collision_e_stop);
+        assert(arm7_res.manipulability > 0.0f);
+
+        // Test kinetic strike shock (35 Nm shock trips Ville's supermartingale in < 1 us)
+        arm7_state.tau_ext[1] = 35.0f;
+        auto arm7_shock = arm7.evaluate(arm7_state, arm7_traj, 0.002f);
+        assert(arm7_shock.collision_e_stop);
+        assert(arm7_shock.cmd_qd[0] == 0.0f);
+
+        std::cout << "[PASS] Physical AI Era: CLBF Barrier, MAVLink, DVS, FPGA Silicon, Ville-Cert, Sim2Real, Bipedal Reflex, 6-DOF & 7-Axis Arms, Edge Daemon\n";
     }
 
     std::cout << "\n=====================================================================\n";

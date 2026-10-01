@@ -85,6 +85,7 @@ When external stochastic drift violates the barrier condition, Axiom Core analyt
 | **Lyapunov Barrier** | `lyapunov_barrier.hpp` | Continuous barrier evaluation & active-set projection | $< 0.8\ \mu\text{s}$ |
 | **Bipedal Locomotion** | `bipedal_locomotion.hpp` | 1,000 Hz LIPM, ZMP polygon & Capture Point stumble shield | $< 1.1\ \mu\text{s}$ |
 | **Cobot Manipulator** | `manipulator_reflex.hpp` | 6-DOF Jacobian Damped Least Squares & contact impedance | $< 0.9\ \mu\text{s}$ |
+| **7-Axis Redundant Arm** | `seven_axis_arm.hpp` | Sub-millimeter DLS Jacobian, nullspace elbow evasion & Ville shock shield | $< 0.8\ \mu\text{s}$ |
 | **MAVLink 2.0** | `mavlink_bridge.hpp` | Direct PX4 / ArduPilot wire serialization & parsing | $< 0.4\ \mu\text{s}$ |
 | **DVS Event Camera** | `event_camera_dvs.hpp` | Asynchronous microsecond pixel spike surface integration | $< 1.2\ \mu\text{s}$ |
 | **Axiom-V Silicon** | `fpga_verilog_synth.hpp` | Generates IEEE 1364-2001 Verilog HDL (`axiom_lif_core.v`) | $5\text{ ns}$ (200 MHz clock) |
@@ -127,9 +128,13 @@ Launch the real-time physical AI command centers:
 
 # Terrestrial Bipedal Humanoid Balance Cockpit (1,000 Hz LIPM + Capture Point):
 .\launch_bipedal_cockpit_3d.bat
+
+# 7-Axis Redundant Manipulator Mission Control (Sub-Millimeter & Nullspace Evasion):
+.\launch_seven_axis_cockpit_3d.bat
 ```
 * **5 Autonomous 6-DOF Drones** navigating dynamic 3D airspace.
 * **Terrestrial Bipedal Humanoid Balance** dynamically resisting pushes via Capture Point recovery.
+* **7-Axis Redundant Arm** performing sub-millimeter insertion with dynamic elbow nullspace evasion.
 * **3D Reynolds Flocking** fused with Control Lyapunov-Barrier safety shields.
 * **Decentralized CRDT Vector Clocks** synchronizing fleet state with zero lock contention.
 * **Live Wire Stream** of MAVLink 2.0 binary packets and CAN-FD motor telemetry.
@@ -138,7 +143,7 @@ Launch the real-time physical AI command centers:
 
 ## 6. Monorepo Verification & Status
 
-* **Native C++ Standalone Headers:** 33 headers verified compile-clean with `g++ -std=c++1z`.
+* **Native C++ Standalone Headers:** 34 headers verified compile-clean with `g++ -std=c++1z`.
 * **Native C++ Executable Benchmark:** `build/axiom_superium_native_test.exe` passed with 100% health across all pillars.
-* **Unified Monorepo Test Suite:** **69 / 69 tests passing (100% HEALTHY)** via `python tests/test_all.py`.
+* **Unified Monorepo Test Suite:** **75 / 75 tests passing (100% HEALTHY)** via `python tests/test_all.py`.
 

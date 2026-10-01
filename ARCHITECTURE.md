@@ -111,8 +111,16 @@ For bipedal humanoid walking with center of mass (CoM) height $z_0$, the dynamic
 $$\omega_0 = \sqrt{\frac{g}{z_0}}, \quad \mathbf{x}_{\text{cp}} = \mathbf{x}_{\text{com}} + \frac{\dot{\mathbf{x}}_{\text{com}}}{\omega_0}$$
 Let $L_{\text{foot}}$ be the longitudinal length of the foot support polygon centered at $\mathbf{x}_{\text{foot}}$.
 * **Condition 1 (Ankle Strategy Feasible):** $|\mathbf{x}_{\text{cp}} - \mathbf{x}_{\text{foot}}| \le \frac{L_{\text{foot}}}{2}$. Ankle torque alone can restore equilibrium.
-* **Condition 2 (Capture Step Required):** $|\mathbf{x}_{\text{cp}} - \mathbf{x}_{\text{foot}}| > \frac{L_{\text{foot}}}{2}$. The robot must step to $\mathbf{x}_{\text{step}} = \mathbf{x}_{\text{cp}}$ to prevent falling.
-Axiom Core monitors this condition at $1,000\text{ Hz}$, tripping Ville's stumble supermartingale in $< 1.1\ \mu\text{s}$ upon foot slippage or external strikes.
+### D. 7-Axis Redundant Manipulator Kinematics & Nullspace Projection
+For a 7-DOF redundant manipulator with joint positions $\mathbf{q} \in \mathbb{R}^7$, the geometric task-space velocity is related to joint velocities via the $3 \times 7$ (or $6 \times 7$) Jacobian:
+$$\dot{\mathbf{x}} = \mathbf{J}(\mathbf{q})\dot{\mathbf{q}}$$
+For task-space tracking ($m \le 6$), the redundant degrees of freedom are resolved using the Damped Least Squares (DLS) pseudoinverse:
+$$\mathbf{J}^\dagger = \mathbf{J}^\top (\mathbf{J}\mathbf{J}^\top + \lambda^2 \mathbf{I})^{-1}$$
+The nullspace projection matrix $\mathbf{N} \in \mathbb{R}^{7 \times 7}$ is defined as:
+$$\mathbf{N}(\mathbf{q}) = \mathbf{I}_7 - \mathbf{J}^\dagger \mathbf{J}$$
+Any secondary objective $\dot{\mathbf{q}}_0 \in \mathbb{R}^7$ (such as dynamic elbow obstacle avoidance $\mathbf{J}_{\text{elbow}}^\top \nabla V_{\text{obs}}$ or Yoshikawa manipulability gradient $\nabla w(\mathbf{q})$) is projected onto the nullspace:
+$$\dot{\mathbf{q}}^* = \mathbf{J}^\dagger [\dot{\mathbf{x}}_{\text{des}} + \mathbf{K}_p(\mathbf{x}_{\text{des}} - \mathbf{x})] + (\mathbf{I}_7 - \mathbf{J}^\dagger \mathbf{J})\dot{\mathbf{q}}_0$$
+* **Fundamental Invariant:** Because $\mathbf{J}\mathbf{N}\dot{\mathbf{q}}_0 = \mathbf{J}(\mathbf{I} - \mathbf{J}^\dagger \mathbf{J})\dot{\mathbf{q}}_0 \equiv \mathbf{0}$, secondary nullspace swiveling moves intermediate arm links (such as the elbow) to evade moving obstacles with **identically zero kinematic perturbation to the sub-millimeter tool center point**.
 
 ---
 

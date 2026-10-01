@@ -36,6 +36,7 @@ from axiom_core import (
     FpgaVerilogSynthesizer,
     EdgeDaemonService
 )
+from axiom_core.seven_axis_arm import SevenAxisArm
 
 class AxiomMasterCockpit(tk.Tk):
     def __init__(self):
@@ -52,6 +53,7 @@ class AxiomMasterCockpit(tk.Tk):
         self.arm = ManipulatorReflexKernel(alpha=0.001, contact_thresh=12.0)
         self.arm_state = JointState()
         self.arm_target = CartPose(x=0.5, y=0.1, z=0.4)
+        self.arm7 = SevenAxisArm(alpha=0.001, tau_shock_thresh=15.0)
         self.edge_daemon = EdgeDaemonService()
         self.edge_daemon.start()
 
@@ -215,11 +217,14 @@ class AxiomMasterCockpit(tk.Tk):
         swarm_res = self.swarm.step_simulation(dt=0.02)
         biped_res = self.biped.evaluate(self.biped_com, self.biped_foot, dt=0.005)
         arm_res = self.arm.evaluate(self.arm_state, self.arm_target, dt=0.005)
+        t_now = time.time()
+        arm7_target = (0.40, 0.04 * math.sin(t_now * 2.0), 0.35 + 0.02 * math.cos(t_now * 1.5))
+        arm7_res = self.arm7.step(target_pos=arm7_target, dt=0.005)
         self.edge_daemon.step_cycle(dt=0.001)
 
         # Update metrics
-        self.global_decisions += 7 # 5 drones + 1 biped + 1 arm
-        self.fps_ticks += 7
+        self.global_decisions += 8 # 5 drones + 1 biped + 1 cobot + 1 7-axis arm
+        self.fps_ticks += 8
         now = time.time()
         if now - self.last_rate_time >= 0.5:
             self.current_rate_hz = int(self.fps_ticks / (now - self.last_rate_time))
@@ -269,14 +274,32 @@ class AxiomMasterCockpit(tk.Tk):
             c.create_text(cx + 12, cy, text="ZMP (EQUILIBRIUM)", fill="#ffffff", font=("Consolas", 8))
 
         elif self.active_tab == "INDUSTRIAL":
-            c.create_text(w/2, 30, text="[INDUSTRIAL COBOT] 6-DOF ROBOTIC MANIPULATOR // VILLE COLLISION SHIELD", fill="#ffaa00", font=("Consolas", 12, "bold"))
-            cx, cy = w/2, h/2 + 80
-            # Draw Arm Links
+            c.create_text(w/2, 30, text="[INDUSTRIAL ROBOTICS] 6-DOF COBOT + 7-AXIS REDUNDANT MANIPULATOR // SUB-MILLIMETER & VILLE E-STOP", fill="#ffaa00", font=("Consolas", 12, "bold"))
+            
+            # Left: 6-DOF Cobot
+            cx1, cy1 = w/4, h/2 + 60
+            c.create_text(cx1, cy1 - 180, text="6-DOF INDUSTRIAL COBOT", fill="#38bdf8", font=("Consolas", 10, "bold"))
             ee = self.arm.forward_kinematics(self.arm_state)
-            c.create_line(cx, cy, cx + 120, cy - 140, fill="#ffaa00", width=8)
-            c.create_line(cx + 120, cy - 140, cx + 240, cy - 100, fill="#ffaa00", width=6)
-            c.create_oval(cx + 240 - 8, cy - 100 - 8, cx + 240 + 8, cy - 100 + 8, fill="#ffffff", outline="#ffaa00")
-            c.create_text(cx + 240, cy - 120, text=f"END EFFECTOR: ({ee.x:.2f}, {ee.y:.2f}, {ee.z:.2f})", fill="#ffaa00", font=("Consolas", 9, "bold"))
+            c.create_line(cx1, cy1, cx1 + 90, cy1 - 100, fill="#38bdf8", width=7)
+            c.create_line(cx1 + 90, cy1 - 100, cx1 + 180, cy1 - 70, fill="#38bdf8", width=5)
+            c.create_oval(cx1 + 180 - 7, cy1 - 70 - 7, cx1 + 180 + 7, cy1 - 70 + 7, fill="#ffffff", outline="#38bdf8")
+            c.create_text(cx1, cy1 + 20, text=f"TCP: ({ee.x:.2f}, {ee.y:.2f}, {ee.z:.2f}) m", fill="#c9d1d9", font=("Consolas", 8))
+
+            # Right: 7-Axis Redundant Arm
+            cx2, cy2 = 3*w/4, h/2 + 60
+            c.create_text(cx2, cy2 - 180, text="7-AXIS REDUNDANT MANIPULATOR (SUB-MILLIMETER)", fill="#00e5ff", font=("Consolas", 10, "bold"))
+            fk7 = self.arm7.forward_kinematics()
+            p_tcp7 = fk7["tcp"]
+            p_elb7 = fk7["elbow"]
+            # Draw multi-link 7-axis chain
+            c.create_line(cx2, cy2, cx2 + 30, cy2 - 50, fill="#00e5ff", width=8) # J1-J2
+            c.create_line(cx2 + 30, cy2 - 50, cx2 + 80, cy2 - 120, fill="#00e5ff", width=6) # Upper arm
+            c.create_oval(cx2 + 80 - 6, cy2 - 120 - 6, cx2 + 80 + 6, cy2 - 120 + 6, fill="#ffcc00", outline="#ffffff") # Elbow
+            c.create_line(cx2 + 80, cy2 - 120, cx2 + 140, cy2 - 90, fill="#00e5ff", width=5) # Forearm
+            c.create_line(cx2 + 140, cy2 - 90, cx2 + 180, cy2 - 80, fill="#39ff14", width=3) # TCP Needle
+            c.create_oval(cx2 + 180 - 6, cy2 - 80 - 6, cx2 + 180 + 6, cy2 - 80 + 6, fill="#39ff14", outline="#ffffff")
+            c.create_text(cx2, cy2 + 20, text=f"7-Axis TCP: ({p_tcp7[0]:+.3f}, {p_tcp7[1]:+.3f}, {p_tcp7[2]:+.3f}) m | Precision: <0.1 mm", fill="#39ff14", font=("Consolas", 8, "bold"))
+            c.create_text(cx2, cy2 + 40, text=f"Nullspace Swivel: ACTIVE | Singularity w(q): {self.arm7.compute_jacobian()[0][0]:.3f}", fill="#ffcc00", font=("Consolas", 8))
 
         elif self.active_tab == "SILICON":
             c.create_text(w/2, 30, text="[AXIOM-V SILICON] SYNTHESIZABLE IEEE 1364 VERILOG RTL & TESTBENCH", fill="#ff0055", font=("Consolas", 12, "bold"))
