@@ -1,6 +1,7 @@
 #pragma once
 
 #include "axiom/types.hpp"
+#include "axiom/register_tree.hpp"
 #include <string>
 #include <vector>
 #include <chrono>

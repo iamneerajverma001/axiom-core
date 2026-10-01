@@ -8,8 +8,8 @@ import json
 from typing import Dict, Any, List
 
 class AxiomPolicyCompiler:
-    def __init__(self):
-        pass
+    def __init__(self, options: Dict[str, Any] = None):
+        self.options = options or {}
 
     def compile_schema_to_cpp(self, schema_def: Dict[str, Any]) -> str:
         """
@@ -63,3 +63,31 @@ class AxiomPolicyCompiler:
         cpp_code.append("} // namespace")
         cpp_code.append("} // namespace axiom")
         return "\n".join(cpp_code)
+
+    def compile(self, schema_def: Dict[str, Any]) -> str:
+        """Alias for compile_schema_to_cpp."""
+        return self.compile_schema_to_cpp(schema_def)
+
+def main():
+    import sys
+    if len(sys.argv) < 2:
+        print("Usage: axiomc <schema.json> [output.hpp]")
+        sys.exit(1)
+    
+    in_file = sys.argv[1]
+    with open(in_file, "r", encoding="utf-8") as f:
+        schema = json.load(f)
+    
+    compiler = AxiomPolicyCompiler()
+    cpp = compiler.compile(schema)
+    
+    if len(sys.argv) >= 3:
+        out_file = sys.argv[2]
+        with open(out_file, "w", encoding="utf-8") as f:
+            f.write(cpp)
+        print(f"Compiled {in_file} -> {out_file}")
+    else:
+        print(cpp)
+
+if __name__ == "__main__":
+    main()

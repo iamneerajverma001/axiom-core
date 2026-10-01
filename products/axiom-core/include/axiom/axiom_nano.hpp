@@ -3,10 +3,9 @@
 #include "axiom/axiom_nano.h"
 #include <cmath>
 #include <cstring>
+#include <algorithm>
 
-namespace axiom {
-
-// Inline C/C++ embedded implementation of axiom-nano
+// Inline C implementation of axiom-nano functions declared in axiom_nano.h
 inline void axiom_nano_init(AxiomNanoContext* ctx, float alpha) {
     if (!ctx) return;
     ctx->num_leaves = 0;
@@ -77,4 +76,10 @@ inline uint16_t axiom_nano_decide(
     return best_leaf;
 }
 
+namespace axiom {
+using ::AxiomNanoLeaf;
+using ::AxiomNanoContext;
+using ::axiom_nano_init;
+using ::axiom_nano_register_leaf;
+using ::axiom_nano_decide;
 } // namespace axiom

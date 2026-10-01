@@ -17,6 +17,7 @@
 #include <string>
 #include <iostream>
 #include <functional>
+#include "axiom/types.hpp"
 
 namespace axiom {
 

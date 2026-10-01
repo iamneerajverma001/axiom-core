@@ -50,9 +50,9 @@ class AxiomTelemetryHUD:
             "================================================================================",
             f" Total Decisions: {self.total_decisions:,}  |  Fast-Path Ratio: {fast_ratio:.1f}%  |  Current Wealth: {curr_wealth:.4f}",
             "--------------------------------------------------------------------------------",
-            f" LATENCY (µs):  Min: {min_lat:.2f} µs  |  Avg: {avg_lat:.2f} µs  |  P99: {p99_lat:.2f} µs  |  Max: {max_lat:.2f} µs",
+            f" LATENCY (us):  Min: {min_lat:.2f} us  |  Avg: {avg_lat:.2f} us  |  P99: {p99_lat:.2f} us  |  Max: {max_lat:.2f} us",
             "--------------------------------------------------------------------------------",
-            " LATENCY HISTOGRAM (µs):"
+            " LATENCY HISTOGRAM (us):"
         ]
 
         # Draw ASCII mini-histogram
@@ -69,8 +69,23 @@ class AxiomTelemetryHUD:
                 bin_counts[-1] += 1
 
         for b_thresh, count in zip(bins, bin_counts):
-            bar = "█" * min(40, int(count * 40 / max(1, len(self.latency_samples_us))))
-            hud.append(f"  <= {b_thresh:5.1f} µs: {bar} ({count})")
+            bar = "#" * min(40, int(count * 40 / max(1, len(self.latency_samples_us))))
+            hud.append(f"  <= {b_thresh:5.1f} us: {bar} ({count})")
 
         hud.append("================================================================================")
         return "\n".join(hud)
+
+def main():
+    import random
+    print("Initializing Axiom Core Telemetry HUD...")
+    hud = AxiomTelemetryHUD()
+    # Populate with demonstration operational stream
+    for _ in range(120):
+        lat = random.expovariate(1.0 / 18.5) # ~18.5µs mean
+        wealth = 1.0 + random.uniform(-0.05, 0.08)
+        path = "FAST_PATH_COMMIT" if random.random() > 0.02 else "SYSTEM2_FALLBACK"
+        hud.record_decision(lat, wealth, path)
+    print(hud.render_ascii_hud())
+
+if __name__ == "__main__":
+    main()

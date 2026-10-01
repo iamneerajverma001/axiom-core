@@ -8,6 +8,9 @@
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#ifndef MEM_LARGE_PAGES
+#define MEM_LARGE_PAGES 0x20000000
+#endif
 #else
 #include <sys/mman.h>
 #include <unistd.h>

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "axiom-core"
-version = "1.0.0"
+version = "2.0.0"
 description = "Ultra-Low-Latency Bare-Metal Neuromorphic Decision Engine & C++20 SDK"
 readme = "README.md"
 authors = [{ name = "Axiom Engineering Team" }]
@@ -18,6 +18,10 @@ classifiers = [
 dependencies = [
     "pydantic>=2.0.0"
 ]
+
+[project.scripts]
+axiomc = "axiom_core.compiler:main"
+axiom-hud = "axiom_core.telemetry_hud:main"
 
 [project.optional-dependencies]
 dev = [

@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <vector>
 #include <cmath>
+#include <cstring>
 #include <algorithm>
 #include "axiom/simd_math.hpp"
 

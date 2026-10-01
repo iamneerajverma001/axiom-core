@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.10)
-project(AxiomCore VERSION 1.0.0 LANGUAGES CXX)
+project(AxiomCore VERSION 2.0.0 LANGUAGES CXX)
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
@@ -27,3 +27,12 @@ if(WIN32)
 else()
     target_link_libraries(axiom_cli pthread rt)
 endif()
+
+# Executable target for Superium 6-Pillar Native C++ Test Suite
+add_executable(axiom_superium_native_test tests/test_superium_native.cpp)
+if(WIN32)
+    target_link_libraries(axiom_superium_native_test ws2_32)
+else()
+    target_link_libraries(axiom_superium_native_test pthread rt)
+endif()
+
