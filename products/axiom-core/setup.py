@@ -12,6 +12,7 @@ setup(
             "axiomc = axiom_core.compiler:main",
             "axiom-hud = axiom_core.telemetry_hud:main",
             "axiom-cert = axiom_core.certifier:main",
+            "axiom-daemon = axiom_core.edge_daemon:main",
         ]
     },
     package_data={

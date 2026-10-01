@@ -70,6 +70,17 @@ from .bipedal_locomotion import (
     FootContact,
     CapturePointResult
 )
+from .manipulator_reflex import (
+    ManipulatorReflexKernel,
+    JointState,
+    CartPose,
+    ManipulatorResult
+)
+from .edge_daemon import (
+    EdgeDaemonService,
+    DaemonConfig,
+    DaemonMetrics
+)
 
 __version__ = "3.0.0"
 __all__ = [
@@ -121,4 +132,11 @@ __all__ = [
     "ComState",
     "FootContact",
     "CapturePointResult",
+    "ManipulatorReflexKernel",
+    "JointState",
+    "CartPose",
+    "ManipulatorResult",
+    "EdgeDaemonService",
+    "DaemonConfig",
+    "DaemonMetrics",
 ]

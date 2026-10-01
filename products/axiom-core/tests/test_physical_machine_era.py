@@ -39,7 +39,12 @@ from axiom_core import (
     SimState,
     BipedalLocomotionReflex,
     ComState,
-    FootContact
+    FootContact,
+    ManipulatorReflexKernel,
+    JointState,
+    CartPose,
+    EdgeDaemonService,
+    DaemonConfig
 )
 
 class TestPhysicalMachineEra(unittest.TestCase):
@@ -245,6 +250,35 @@ class TestPhysicalMachineEra(unittest.TestCase):
         self.assertTrue(res_kick.capture_step_required)
         self.assertFalse(res_kick.is_stable)
         self.assertGreater(res_kick.recommended_step_x, 0.5) # Reaches out to intercept CoM fall
+
+    def test_manipulator_reflex_kernel(self):
+        arm = ManipulatorReflexKernel(alpha=0.001, contact_thresh=12.0)
+        state = JointState(q=[0.0, 0.5, -0.5, 0.0, 0.0, 0.0], tau=[0.0] * 6)
+        target = CartPose(x=0.5, y=0.1, z=0.4)
+
+        # Free space trajectory
+        res = arm.evaluate(state, target, dt=0.005)
+        self.assertTrue(res.is_safe)
+        self.assertFalse(res.collision_e_stop)
+        self.assertEqual(len(res.cmd_torques), 6)
+
+        # External human collision impact (tau1 = 35 Nm > 12 Nm)
+        state.tau[1] = 35.0
+        coll_res = arm.evaluate(state, target, dt=0.005)
+        self.assertGreater(coll_res.martingale_wealth, 1.0)
+
+    def test_edge_daemon_service(self):
+        daemon = EdgeDaemonService(DaemonConfig(enable_watchdog=True))
+        self.assertTrue(daemon.start())
+        for _ in range(25):
+            daemon.step_cycle(dt=0.001)
+
+        m = daemon.get_metrics()
+        self.assertEqual(m.total_decisions, 25)
+        self.assertEqual(m.watchdog_heartbeats, 25)
+        self.assertTrue(m.is_healthy)
+        self.assertTrue(len(daemon.flight_recorder.root_hash) > 0)
+        daemon.stop()
 
 if __name__ == "__main__":
     unittest.main()

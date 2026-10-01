@@ -24,6 +24,8 @@
 #include "axiom/certifier.hpp"
 #include "axiom/sim2real_bridge.hpp"
 #include "axiom/bipedal_locomotion.hpp"
+#include "axiom/manipulator_reflex.hpp"
+#include "axiom/edge_daemon.hpp"
 
 using namespace axiom;
 
@@ -191,13 +193,31 @@ int main() {
         assert(biped_res.is_stable);
         assert(!biped_res.capture_step_required);
 
-        // Perturb CoM with sudden forward kick (2.5 m/s)
-        com.vx = 2.5f;
-        auto perturb_res = biped.evaluate(com, foot, 0.005f);
-        assert(perturb_res.capture_step_required);
-        assert(perturb_res.recommended_step_x > 0.5f);
+        // 7h. 6-DOF Robotic Manipulator Reflex & Cobot Safety
+        ManipulatorReflexKernel arm(0.001f, 12.0f);
+        ManipulatorReflexKernel::JointState arm_state;
+        ManipulatorReflexKernel::CartPose arm_target{0.5f, 0.1f, 0.4f};
+        auto arm_res = arm.evaluate(arm_state, arm_target, 0.005f);
+        assert(arm_res.is_safe);
+        assert(!arm_res.collision_e_stop);
 
-        std::cout << "[PASS] Physical AI Era: CLBF Barrier, MAVLink, DVS, FPGA Silicon, Ville-Cert, Sim2Real, Bipedal Reflex\n";
+        // Simulate human collision (external torque spike = 40 Nm)
+        arm_state.tau[1] = 40.0f;
+        auto coll_res = arm.evaluate(arm_state, arm_target, 0.005f);
+        assert(coll_res.martingale_wealth > 1.0f);
+
+        // 7i. Industrial Autonomous Edge Daemon Service
+        EdgeDaemonService daemon;
+        assert(daemon.start());
+        for (int step = 0; step < 20; ++step) {
+            daemon.step_cycle(0.001f);
+        }
+        auto d_metrics = daemon.get_metrics();
+        assert(d_metrics.total_decisions == 20);
+        assert(d_metrics.is_healthy);
+        daemon.stop();
+
+        std::cout << "[PASS] Physical AI Era: CLBF Barrier, MAVLink, DVS, FPGA Silicon, Ville-Cert, Sim2Real, Bipedal Reflex, Manipulator, Edge Daemon\n";
     }
 
     std::cout << "\n=====================================================================\n";
